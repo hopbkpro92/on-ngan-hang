@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -6,7 +7,7 @@ import { loadQuizData, listAvailableQuizFiles } from "@/lib/quiz-loader";
 import QuizSetup from "@/components/quiz/QuizSetup";
 import QuizArea from "@/components/quiz/QuizArea";
 import QuizResults from "@/components/quiz/QuizResults";
-import { Loader2, AlertTriangle, BookOpenText, FileText, GraduationCap, CheckSquareIcon } from "lucide-react";
+import { Loader2, AlertTriangle, BookOpenText, FileText } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -90,7 +91,7 @@ export default function Home() {
       }
     };
     fetchQuestions();
-  }, [selectedFile]); 
+  }, [selectedFile, availableFiles.length]); 
 
   const handleStartQuiz = useCallback((numQuestions: number, mode: QuizMode) => {
     if (allLoadedQuestions.length === 0) {
@@ -132,7 +133,7 @@ export default function Home() {
 
   if (showGlobalLoader) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background text-foreground">
+      <main className="flex min-h-screen flex-col items-center justify-center p-2 bg-background text-foreground">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <p className="text-xl font-semibold">Loading Quiz Whiz...</p>
         {(!selectedFile && availableFiles.length === 0) && <p className="text-sm text-muted-foreground mt-2">Searching for quiz files...</p>}
@@ -143,7 +144,7 @@ export default function Home() {
 
   if (error && availableFiles.length === 0) { 
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background text-foreground text-center">
+      <main className="flex min-h-screen flex-col items-center justify-center p-2 bg-background text-foreground text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h1 className="text-2xl font-bold text-destructive mb-2">Oops! Something went wrong.</h1>
         <p className="text-lg mb-6">{error}</p>
@@ -155,52 +156,52 @@ export default function Home() {
   }
   
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background text-foreground">
-      <header className="mb-8 text-center">
-        <h1 className="text-5xl font-extrabold tracking-tight flex items-center justify-center">
-          <BookOpenText className="h-12 w-12 mr-3 text-primary" />
+    <main className="flex min-h-screen flex-col items-center p-2 bg-background text-foreground">
+      <header className="mb-4 text-center">
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center justify-center">
+          <BookOpenText className="h-8 w-8 md:h-10 md:w-10 mr-2 text-primary" />
           Quiz Whiz
         </h1>
-        <p className="text-xl text-muted-foreground mt-2">Sharpen Your Mind, One Question at a Time!</p>
+        <p className="text-md md:text-lg text-muted-foreground mt-1">Sharpen Your Mind, One Question at a Time!</p>
       </header>
 
-      <div className="w-full max-w-md md:max-w-2xl lg:max-w-3xl">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         {availableFiles.length > 0 ? (
-          <Card className="mb-8 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center justify-center">
-                <FileText className="mr-2 h-5 w-5 text-primary" />
+          <Card className="mb-4 shadow-md w-full mx-auto">
+            <CardHeader className="p-3 md:p-4">
+              <CardTitle className="text-md md:text-lg flex items-center justify-center">
+                <FileText className="mr-2 h-4 w-4 md:h-5 md:w-5 text-primary" />
                 Select Quiz File
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 md:p-4 pt-0">
               <Label htmlFor="quizFileSelect" className="sr-only">Select Quiz File</Label>
               <Select onValueChange={handleFileChange} value={selectedFile || ""}>
-                <SelectTrigger id="quizFileSelect" className="w-full text-base">
+                <SelectTrigger id="quizFileSelect" className="w-full text-sm md:text-base">
                   <SelectValue placeholder="Select a quiz file" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableFiles.map((file) => (
-                    <SelectItem key={file} value={file} className="text-base">
+                    <SelectItem key={file} value={file} className="text-sm md:text-base">
                       {file}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {error && selectedFile && <p className="text-destructive text-sm mt-2 text-center">{error}</p>}
+              {error && selectedFile && <p className="text-destructive text-xs md:text-sm mt-2 text-center">{error}</p>}
             </CardContent>
           </Card>
         ) : (
            !isLoading && !error && 
-            <Card className="mb-8 shadow-md">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center justify-center text-muted-foreground">
-                  <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
+            <Card className="mb-4 shadow-md w-full mx-auto">
+              <CardHeader className="p-3 md:p-4">
+                <CardTitle className="text-md md:text-lg flex items-center justify-center text-muted-foreground">
+                  <AlertTriangle className="mr-2 h-4 w-4 md:h-5 md:w-5 text-destructive" />
                   No Quiz Files Found
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-center text-muted-foreground">
+              <CardContent className="p-3 md:p-4 pt-0">
+                <p className="text-center text-muted-foreground text-sm md:text-base">
                   Please add Excel (.xlsx or .xls) files to the 'public' folder and refresh the page.
                 </p>
               </CardContent>
@@ -233,10 +234,11 @@ export default function Home() {
           />
         )}
       </div>
-      <footer className="mt-12 text-center text-sm text-muted-foreground">
+      <footer className="mt-6 text-center text-xs text-muted-foreground">
         {currentYear !== null ? <p>&copy; {currentYear} Quiz Whiz. All rights reserved.</p> : <p>Loading year...</p>}
         <p>Built with Next.js & ShadCN UI. Data from Excel.</p>
       </footer>
     </main>
   );
 }
+    

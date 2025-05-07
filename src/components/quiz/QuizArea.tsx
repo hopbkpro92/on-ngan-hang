@@ -61,11 +61,11 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
   const currentSelectedOption = selectedAnswers[currentQuestionIndex];
 
   return (
-    <div className="w-full max-w-2xl space-y-8">
-       <Progress value={progressValue} className="w-full h-3 mb-2" />
+    <div className="w-full space-y-6 mx-auto"> {/* Removed max-width */}
+       <Progress value={progressValue} className="w-full h-2 mb-1" />
        <div className={showNext ? 'animate-fadeIn' : 'opacity-0'}>
         <QuestionDisplayCard
-          key={`${currentQuestion.id}-${quizMode}`} // Add quizMode to key to force re-render if mode changes mid-quiz (though not typical)
+          key={`${currentQuestion.id}-${quizMode}-${currentQuestionIndex}`} // Add currentQuestionIndex to key to force re-render with new default selection state
           question={currentQuestion}
           selectedOption={currentSelectedOption}
           onOptionSelect={handleOptionSelect}
@@ -75,26 +75,26 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
         />
        </div>
       
-      <div className="flex justify-between items-center pt-4">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex justify-between items-center pt-3">
+        <div className="text-xs md:text-sm text-muted-foreground">
           Answered: {selectedAnswers.filter(ans => ans !== null).length} / {questions.length}
         </div>
         {currentQuestionIndex < questions.length - 1 ? (
           <Button 
             onClick={handleNextQuestion} 
             disabled={currentSelectedOption === null} 
-            size="lg"
+            size="default"
           >
-            Next Question <ArrowRight className="ml-2 h-5 w-5" />
+            Next Question <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
           <Button 
             onClick={handleSubmitQuiz} 
             disabled={selectedAnswers.some(ans => ans === null)} 
-            size="lg" 
+            size="default"
             variant="default"
           >
-            Submit Quiz <CheckSquare className="ml-2 h-5 w-5" />
+            Submit Quiz <CheckSquare className="ml-2 h-4 w-4" />
           </Button>
         )}
       </div>

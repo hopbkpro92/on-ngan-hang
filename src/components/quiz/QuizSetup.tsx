@@ -90,16 +90,16 @@ export default function QuizSetup({
 
 
   return (
-    <Card className={`w-full shadow-xl ${isLoading ? 'opacity-70' : ''}`}>
-      <CardHeader>
-        <CardTitle className="text-3xl font-bold text-center">Quiz Whiz Challenge!</CardTitle>
-        <CardDescription className="text-center text-muted-foreground min-h-[2em]">
+    <Card className={`w-full shadow-xl ${isLoading ? 'opacity-70' : ''} mx-auto`}>
+      <CardHeader className="p-3 md:p-4">
+        <CardTitle className="text-2xl md:text-3xl font-bold text-center">Quiz Whiz Challenge!</CardTitle>
+        <CardDescription className="text-center text-muted-foreground min-h-[1.5em] md:min-h-[2em] text-sm md:text-base">
           {descriptionText}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="numQuestions" className="text-lg font-medium">Number of Questions:</Label>
+      <CardContent className="space-y-4 p-3 md:p-4">
+        <div className="space-y-1">
+          <Label htmlFor="numQuestions" className="text-md md:text-lg font-medium">Number of Questions:</Label>
           <Input
             id="numQuestions"
             type="number"
@@ -107,11 +107,11 @@ export default function QuizSetup({
             onChange={(e) => setNumQuestions(e.target.value)}
             min="1"
             max={maxQuestions > 0 ? maxQuestions : undefined}
-            className="text-base bg-card border-primary/50 focus:border-primary focus:ring-primary"
+            className="text-sm md:text-base bg-card border-primary/50 focus:border-primary focus:ring-primary"
             data-ai-hint="number input"
             disabled={isSetupDisabled}
           />
-           <p className="text-sm text-muted-foreground">
+           <p className="text-xs md:text-sm text-muted-foreground">
             {hasFilesAvailable && hasLoadedQuestions && maxQuestions > 0 ? `(Max: ${maxQuestions})` 
             : hasFilesAvailable && isLoading ? "(Loading questions...)"
             : hasFilesAvailable && !hasLoadedQuestions ? "(No questions in selected file)"
@@ -119,42 +119,42 @@ export default function QuizSetup({
           </p>
         </div>
 
-        <div className="space-y-3">
-          <Label className="text-lg font-medium">Select Mode:</Label>
+        <div className="space-y-2">
+          <Label className="text-md md:text-lg font-medium">Select Mode:</Label>
           <RadioGroup
             value={selectedMode}
             onValueChange={(value: string) => setSelectedMode(value as QuizMode)}
-            className="flex flex-col sm:flex-row sm:space-x-6 space-y-2 sm:space-y-0 items-start sm:items-center"
+            className="flex flex-col sm:flex-row sm:space-x-4 space-y-1 sm:space-y-0 items-start sm:items-center"
             disabled={isSetupDisabled}
           >
-            <div className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+            <div className="flex items-center space-x-1.5 p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
               <RadioGroupItem value="testing" id="mode-testing" disabled={isSetupDisabled} />
-              <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
-                <CheckSquareIcon className="mr-2 h-5 w-5 text-primary" /> Testing Mode
+              <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> Testing Mode
               </Label>
             </div>
-            <div className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+            <div className="flex items-center space-x-1.5 p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
               <RadioGroupItem value="learning" id="mode-learning" disabled={isSetupDisabled} />
-              <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
-                <GraduationCap className="mr-2 h-5 w-5 text-accent" /> Learning Mode
+              <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> Learning Mode
               </Label>
             </div>
           </RadioGroup>
-           <p className="text-sm text-muted-foreground">
+           <p className="text-xs md:text-sm text-muted-foreground">
             Testing: Answers revealed at the end. Learning: Immediate feedback per question.
           </p>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="p-3 md:p-4 justify-center">
         <Button 
           onClick={handleStart} 
-          className="w-full text-lg py-6" 
+          className="text-md md:text-lg py-2.5 md:py-3"
           disabled={isButtonDisabled}
         >
           {isLoading ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
           ) : (
-            <Rocket className="mr-2 h-5 w-5" />
+            <Rocket className="mr-2 h-4 w-4 md:h-5 md:w-5" />
           )}
           {isLoading ? "Loading..." : "Start Quiz"}
         </Button>
