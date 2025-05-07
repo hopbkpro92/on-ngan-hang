@@ -121,16 +121,23 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
         }
 
         // Fallback for production (Vercel): fetch the list from a JSON file
+        if (!process.env.NEXT_PUBLIC_APP_URL) {
+            console.warn("NEXT_PUBLIC_APP_URL environment variable is not set");
+            return []; // Return empty array instead of throwing
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/quiz-files.json`);
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch quiz file list: ${response.statusText} (${response.status})`);
+            console.error(`Failed to fetch quiz file list: ${response.statusText} (${response.status})`);
+            return []; // Return empty array instead of throwing
         }
 
         const fileList = await response.json();
 
         if (!Array.isArray(fileList)) {
-            throw new Error("Invalid quiz file list format: expected an array");
+            console.error("Invalid quiz file list format: expected an array");
+            return []; // Return empty array instead of throwing
         }
 
         // Filter and sort the Excel files
@@ -141,7 +148,7 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
         return excelFiles;
     } catch (error) {
         console.error("Failed to list available quiz files:", error);
-        let message = "Could not retrieve the list of quiz files.";
-        throw new Error(message);
+        // Return empty array instead of throwing error
+        return [];
     }
 }
