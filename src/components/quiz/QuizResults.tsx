@@ -1,18 +1,20 @@
 "use client";
 
 import type { Question } from "@/lib/quiz-data";
+import type { QuizMode } from "@/app/page";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, RefreshCw, Award } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, Award, GraduationCap, CheckSquareIcon } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface QuizResultsProps {
   questions: Question[];
   userAnswers: (number | null)[];
   onRetakeQuiz: () => void;
+  quizMode: QuizMode;
 }
 
-export default function QuizResults({ questions, userAnswers, onRetakeQuiz }: QuizResultsProps) {
+export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quizMode }: QuizResultsProps) {
   let correctCount = 0;
   userAnswers.forEach((answer, index) => {
     if (answer !== null && answer === questions[index].correctAnswerIndex) {
@@ -22,25 +24,30 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz }: Qu
   const wrongCount = questions.length - correctCount;
   const scorePercentage = Math.round((correctCount / questions.length) * 100);
 
+  const titleText = quizMode === "learning" ? "Learning Session Complete!" : "Quiz Completed!";
+  const Icon = quizMode === "learning" ? GraduationCap : Award;
+
   return (
     <Card className="w-full max-w-3xl shadow-xl animate-fadeIn">
       <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-bold">Quiz Completed!</CardTitle>
-        <Award className="mx-auto h-16 w-16 text-primary my-4" />
+        <CardTitle className="text-3xl font-bold">{titleText}</CardTitle>
+        <Icon className="mx-auto h-16 w-16 text-primary my-4" />
         <CardDescription className="text-xl">
           You scored {correctCount} out of {questions.length} ({scorePercentage}%)
         </CardDescription>
         <div className="flex justify-center gap-4 mt-2">
-          <span className="text-lg text-correct-answer-DEFAULT font-semibold flex items-center">
+          <span className="text-lg text-correct-answer font-semibold flex items-center">
             <CheckCircle className="mr-1 h-5 w-5" /> Correct: {correctCount}
           </span>
-          <span className="text-lg text-incorrect-answer-DEFAULT font-semibold flex items-center">
+          <span className="text-lg text-incorrect-answer font-semibold flex items-center">
             <XCircle className="mr-1 h-5 w-5" /> Wrong: {wrongCount}
           </span>
         </div>
       </CardHeader>
       <CardContent>
-        <h3 className="text-xl font-semibold mb-4 text-center text-card-foreground">Review Your Answers:</h3>
+        <h3 className="text-xl font-semibold mb-4 text-center text-card-foreground">
+          {quizMode === 'learning' ? 'Review Questions & Answers:' : 'Review Your Answers:'}
+        </h3>
         <Accordion type="single" collapsible className="w-full">
           {questions.map((question, index) => {
             const userAnswer = userAnswers[index];
@@ -48,7 +55,7 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz }: Qu
             return (
               <AccordionItem value={`item-${index}`} key={question.id} className="mb-2 border border-border rounded-md bg-card">
                 <AccordionTrigger className={`p-4 text-left hover:no-underline rounded-t-md ${
-                    isCorrect ? 'text-correct-answer-DEFAULT' : 'text-incorrect-answer-DEFAULT'
+                    isCorrect ? 'text-correct-answer' : 'text-incorrect-answer'
                   }`}>
                   <div className="flex items-center w-full">
                     {isCorrect ? (
@@ -74,8 +81,11 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz }: Qu
                         {optionIndex === userAnswer && !isCorrect && (
                           <span className="ml-2 text-xs font-normal">(Your answer)</span>
                         )}
-                        {optionIndex === question.correctAnswerIndex && !isCorrect && (
+                        {optionIndex === question.correctAnswerIndex && userAnswer !== null && optionIndex !== userAnswer && (
                            <span className="ml-2 text-xs font-normal">(Correct answer)</span>
+                        )}
+                         {optionIndex === question.correctAnswerIndex && userAnswer === null && (
+                           <span className="ml-2 text-xs font-normal">(Correct answer - Not answered)</span>
                         )}
                       </li>
                     ))}
@@ -90,7 +100,7 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz }: Qu
       <CardFooter>
         <Button onClick={onRetakeQuiz} className="w-full text-lg py-6">
           <RefreshCw className="mr-2 h-5 w-5" />
-          Retake Quiz
+          {quizMode === "learning" ? "New Learning Session" : "Retake Quiz"}
         </Button>
       </CardFooter>
     </Card>

@@ -6,13 +6,14 @@ import { loadQuizData, listAvailableQuizFiles } from "@/lib/quiz-loader";
 import QuizSetup from "@/components/quiz/QuizSetup";
 import QuizArea from "@/components/quiz/QuizArea";
 import QuizResults from "@/components/quiz/QuizResults";
-import { Loader2, AlertTriangle, BookOpenText, FileText } from "lucide-react";
+import { Loader2, AlertTriangle, BookOpenText, FileText, GraduationCap, CheckSquareIcon } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type QuizState = "setup" | "active" | "results";
+export type QuizMode = "learning" | "testing";
 
 export default function Home() {
   const [quizState, setQuizState] = useState<QuizState>("setup");
@@ -22,6 +23,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [quizMode, setQuizMode] = useState<QuizMode>("testing");
 
   const [availableFiles, setAvailableFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | undefined>(undefined);
@@ -57,11 +59,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!selectedFile) {
-      // This case is primarily when initializeQuizData finds no files.
-      // Error and isLoading state should already be set by initializeQuizData.
-      // If availableFiles is populated but selectedFile is somehow null, it's an unexpected state.
       if (availableFiles.length === 0) {
-          // Ensure isLoading is false if it wasn't caught by initializeQuizData's logic
           setIsLoading(false);
       }
       return;
@@ -94,11 +92,12 @@ export default function Home() {
     fetchQuestions();
   }, [selectedFile]); 
 
-  const handleStartQuiz = useCallback((numQuestions: number) => {
+  const handleStartQuiz = useCallback((numQuestions: number, mode: QuizMode) => {
     if (allLoadedQuestions.length === 0) {
       setError("Cannot start quiz: No questions loaded from the selected file.");
       return;
     }
+    setQuizMode(mode);
     const getRandomQuestions = (questions: Question[], count: number): Question[] => {
       const shuffled = [...questions].sort(() => 0.5 - Math.random());
       return shuffled.slice(0, Math.min(count, questions.length));
@@ -118,6 +117,7 @@ export default function Home() {
     setQuizState("setup");
     setCurrentQuizQuestions([]);
     setUserAnswers([]);
+    // quizMode remains as previously selected
   }, []);
 
   const handleFileChange = (value: string) => {
@@ -125,10 +125,9 @@ export default function Home() {
     setQuizState("setup"); 
     setCurrentQuizQuestions([]);
     setUserAnswers([]);
-    setAllLoadedQuestions([]); // Clear previously loaded questions immediately
+    setAllLoadedQuestions([]); 
   };
 
-  // Combined loading state: true if listing files OR loading questions for a selected file
   const showGlobalLoader = isLoading && (availableFiles.length === 0 || !selectedFile || (!!selectedFile && allLoadedQuestions.length === 0 && !error));
 
   if (showGlobalLoader) {
@@ -142,7 +141,7 @@ export default function Home() {
     );
   }
 
-  if (error && availableFiles.length === 0) { // Critical error, no files could be listed or an error occurred during listing
+  if (error && availableFiles.length === 0) { 
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background text-foreground text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
@@ -192,7 +191,7 @@ export default function Home() {
             </CardContent>
           </Card>
         ) : (
-           !isLoading && !error && /* if not loading and no general error, but also no files */ (
+           !isLoading && !error && 
             <Card className="mb-8 shadow-md">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center justify-center text-muted-foreground">
@@ -206,26 +205,31 @@ export default function Home() {
                 </p>
               </CardContent>
             </Card>
-          )
         )}
 
         {quizState === "setup" && (
           <QuizSetup 
             onStartQuiz={handleStartQuiz} 
             maxQuestions={allLoadedQuestions.length} 
-            isLoading={isLoading && !!selectedFile && allLoadedQuestions.length === 0 && !error} // True if loading questions for a selected file
+            isLoading={isLoading && !!selectedFile && allLoadedQuestions.length === 0 && !error}
             hasLoadedQuestions={allLoadedQuestions.length > 0}
             hasFilesAvailable={availableFiles.length > 0}
+            initialMode={quizMode}
           />
         )}
         {quizState === "active" && currentQuizQuestions.length > 0 && (
-          <QuizArea questions={currentQuizQuestions} onQuizComplete={handleQuizComplete} />
+          <QuizArea 
+            questions={currentQuizQuestions} 
+            onQuizComplete={handleQuizComplete} 
+            quizMode={quizMode}
+          />
         )}
         {quizState === "results" && currentQuizQuestions.length > 0 && (
           <QuizResults
             questions={currentQuizQuestions}
             userAnswers={userAnswers}
             onRetakeQuiz={handleRetakeQuiz}
+            quizMode={quizMode}
           />
         )}
       </div>
