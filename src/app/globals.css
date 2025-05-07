@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 207 70% 53%; /* Calm Blue #3498db */
+    --foreground: 0 0% 100%;   /* White for text on blue background */
+
+    --card: 0 0% 95%; /* Light Gray #f2f2f2 for question cards */
+    --card-foreground: 0 0% 3.9%; /* Dark text for cards */
+
+    --popover: 0 0% 95%;
+    --popover-foreground: 0 0% 3.9%;
+
+    --primary: 210 80% 55%; /* A slightly more saturated blue for primary actions */
+    --primary-foreground: 0 0% 100%; /* White text on primary buttons */
+
+    --secondary: 207 70% 45%; /* Slightly darker blue for secondary elements */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 85%; /* Muted gray */
+    --muted-foreground: 0 0% 40%; /* Darker muted text */
+
+    --accent: 48 93% 50%; /* Vibrant Yellow #f1c40f for general accent if needed */
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 9 80% 60%; /* Red #e74c3c */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 85%; /* Adjusted border to match card/muted aesthetics */
+    --input: 0 0% 95%; /* Input background similar to card */
+    --input-foreground: 0 0% 3.9%; /* Dark text for input */
+    --ring: 210 80% 55%; /* Primary blue for focus rings */
+
+    --radius: 0.5rem;
+
+    /* Specific colors for quiz feedback */
+    --correct-answer-bg: 145 63% 49%; /* Green #2ecc71 */
+    --correct-answer-fg: 0 0% 100%;   /* White text on green */
+    --incorrect-answer-bg: 9 80% 60%; /* Red #e74c3c (same as destructive) */
+    --incorrect-answer-fg: 0 0% 100%; /* White text on red */
+    
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 210 80% 55%; /* Primary blue for dark mode too */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 207 70% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 48 93% 50%; /* Yellow accent */
+    --accent-foreground: 0 0% 10%;
+    --destructive: 9 70% 55%; /* Slightly adjusted red for dark */
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 10%;
+    --input-foreground: 0 0% 95%;
+    --ring: 210 80% 55%;
+
+    --correct-answer-bg: 145 63% 35%; /* Darker Green */
+    --correct-answer-fg: 0 0% 95%;
+    --incorrect-answer-bg: 9 70% 45%; /* Darker Red */
+    --incorrect-answer-fg: 0 0% 95%;
+    
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Additional utility classes for quiz feedback if needed directly */
+.quiz-correct-answer {
+  @apply bg-[hsl(var(--correct-answer-bg))] text-[hsl(var(--correct-answer-fg))];
+}
+
+.quiz-incorrect-answer-highlight {
+  @apply border-2 border-[hsl(var(--incorrect-answer-bg))];
+}

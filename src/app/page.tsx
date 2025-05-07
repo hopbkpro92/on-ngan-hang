@@ -1,0 +1,238 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import type { Question } from "@/lib/quiz-data";
+import { loadQuizData, listAvailableQuizFiles } from "@/lib/quiz-loader";
+import QuizSetup from "@/components/quiz/QuizSetup";
+import QuizArea from "@/components/quiz/QuizArea";
+import QuizResults from "@/components/quiz/QuizResults";
+import { Loader2, AlertTriangle, BookOpenText, FileText } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+type QuizState = "setup" | "active" | "results";
+
+export default function Home() {
+  const [quizState, setQuizState] = useState<QuizState>("setup");
+  const [allLoadedQuestions, setAllLoadedQuestions] = useState<Question[]>([]);
+  const [currentQuizQuestions, setCurrentQuizQuestions] = useState<Question[]>([]);
+  const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  const [availableFiles, setAvailableFiles] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+    
+    const initializeQuizData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const files = await listAvailableQuizFiles();
+        setAvailableFiles(files);
+
+        if (files.length > 0) {
+          setSelectedFile(files[0]);
+          // Question loading will be handled by the next useEffect
+        } else {
+          setError("No quiz files (.xlsx or .xls) found in the 'public' folder. Please add quiz files to use the application.");
+          setAllLoadedQuestions([]); 
+          setIsLoading(false); 
+        }
+      } catch (err) {
+        console.error("Failed to list available quiz files:", err);
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred while listing quiz files.";
+        setError(errorMessage);
+        setAllLoadedQuestions([]);
+        setIsLoading(false); 
+      }
+    };
+    initializeQuizData();
+  }, []); 
+
+  useEffect(() => {
+    if (!selectedFile) {
+      // This case is primarily when initializeQuizData finds no files.
+      // Error and isLoading state should already be set by initializeQuizData.
+      // If availableFiles is populated but selectedFile is somehow null, it's an unexpected state.
+      if (availableFiles.length === 0) {
+          // Ensure isLoading is false if it wasn't caught by initializeQuizData's logic
+          setIsLoading(false);
+      }
+      return;
+    }
+
+    const fetchQuestions = async () => {
+      setIsLoading(true); 
+      setError(null);     
+      
+      try {
+        const data = await loadQuizData(selectedFile);
+        if (data && data.length > 0) {
+          setAllLoadedQuestions(data);
+        } else {
+          setAllLoadedQuestions([]); 
+          setError(`No valid questions found in '${selectedFile}'. Please ensure it's correctly formatted and contains data.`);
+        }
+      } catch (err) {
+        console.error(`Failed to load quiz data from ${selectedFile}:`, err);
+        setAllLoadedQuestions([]); 
+        if (err instanceof Error) {
+          setError(err.message); 
+        } else {
+          setError(`An unexpected error occurred while loading data from '${selectedFile}'.`);
+        }
+      } finally {
+        setIsLoading(false); 
+      }
+    };
+    fetchQuestions();
+  }, [selectedFile]); 
+
+  const handleStartQuiz = useCallback((numQuestions: number) => {
+    if (allLoadedQuestions.length === 0) {
+      setError("Cannot start quiz: No questions loaded from the selected file.");
+      return;
+    }
+    const getRandomQuestions = (questions: Question[], count: number): Question[] => {
+      const shuffled = [...questions].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, Math.min(count, questions.length));
+    };
+    const randomQuestions = getRandomQuestions(allLoadedQuestions, numQuestions);
+    setCurrentQuizQuestions(randomQuestions);
+    setUserAnswers(Array(randomQuestions.length).fill(null));
+    setQuizState("active");
+  }, [allLoadedQuestions]);
+
+  const handleQuizComplete = useCallback((answers: (number | null)[]) => {
+    setUserAnswers(answers);
+    setQuizState("results");
+  }, []);
+
+  const handleRetakeQuiz = useCallback(() => {
+    setQuizState("setup");
+    setCurrentQuizQuestions([]);
+    setUserAnswers([]);
+  }, []);
+
+  const handleFileChange = (value: string) => {
+    setSelectedFile(value);
+    setQuizState("setup"); 
+    setCurrentQuizQuestions([]);
+    setUserAnswers([]);
+    setAllLoadedQuestions([]); // Clear previously loaded questions immediately
+  };
+
+  // Combined loading state: true if listing files OR loading questions for a selected file
+  const showGlobalLoader = isLoading && (availableFiles.length === 0 || !selectedFile || (!!selectedFile && allLoadedQuestions.length === 0 && !error));
+
+  if (showGlobalLoader) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background text-foreground">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-xl font-semibold">Loading Quiz Whiz...</p>
+        {(!selectedFile && availableFiles.length === 0) && <p className="text-sm text-muted-foreground mt-2">Searching for quiz files...</p>}
+        {(selectedFile && allLoadedQuestions.length === 0 && !error) && <p className="text-sm text-muted-foreground mt-2">Fetching questions from {selectedFile}...</p>}
+      </main>
+    );
+  }
+
+  if (error && availableFiles.length === 0) { // Critical error, no files could be listed or an error occurred during listing
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-background text-foreground text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h1 className="text-2xl font-bold text-destructive mb-2">Oops! Something went wrong.</h1>
+        <p className="text-lg mb-6">{error}</p>
+        <Button onClick={() => window.location.reload()} variant="outline">
+          Try Reloading
+        </Button>
+      </main>
+    );
+  }
+  
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background text-foreground">
+      <header className="mb-8 text-center">
+        <h1 className="text-5xl font-extrabold tracking-tight flex items-center justify-center">
+          <BookOpenText className="h-12 w-12 mr-3 text-primary" />
+          Quiz Whiz
+        </h1>
+        <p className="text-xl text-muted-foreground mt-2">Sharpen Your Mind, One Question at a Time!</p>
+      </header>
+
+      <div className="w-full max-w-md md:max-w-2xl lg:max-w-3xl">
+        {availableFiles.length > 0 ? (
+          <Card className="mb-8 shadow-md">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center justify-center">
+                <FileText className="mr-2 h-5 w-5 text-primary" />
+                Select Quiz File
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Label htmlFor="quizFileSelect" className="sr-only">Select Quiz File</Label>
+              <Select onValueChange={handleFileChange} value={selectedFile || ""}>
+                <SelectTrigger id="quizFileSelect" className="w-full text-base">
+                  <SelectValue placeholder="Select a quiz file" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableFiles.map((file) => (
+                    <SelectItem key={file} value={file} className="text-base">
+                      {file}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {error && selectedFile && <p className="text-destructive text-sm mt-2 text-center">{error}</p>}
+            </CardContent>
+          </Card>
+        ) : (
+           !isLoading && !error && /* if not loading and no general error, but also no files */ (
+            <Card className="mb-8 shadow-md">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center justify-center text-muted-foreground">
+                  <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
+                  No Quiz Files Found
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground">
+                  Please add Excel (.xlsx or .xls) files to the 'public' folder and refresh the page.
+                </p>
+              </CardContent>
+            </Card>
+          )
+        )}
+
+        {quizState === "setup" && (
+          <QuizSetup 
+            onStartQuiz={handleStartQuiz} 
+            maxQuestions={allLoadedQuestions.length} 
+            isLoading={isLoading && !!selectedFile && allLoadedQuestions.length === 0 && !error} // True if loading questions for a selected file
+            hasLoadedQuestions={allLoadedQuestions.length > 0}
+            hasFilesAvailable={availableFiles.length > 0}
+          />
+        )}
+        {quizState === "active" && currentQuizQuestions.length > 0 && (
+          <QuizArea questions={currentQuizQuestions} onQuizComplete={handleQuizComplete} />
+        )}
+        {quizState === "results" && currentQuizQuestions.length > 0 && (
+          <QuizResults
+            questions={currentQuizQuestions}
+            userAnswers={userAnswers}
+            onRetakeQuiz={handleRetakeQuiz}
+          />
+        )}
+      </div>
+      <footer className="mt-12 text-center text-sm text-muted-foreground">
+        {currentYear !== null ? <p>&copy; {currentYear} Quiz Whiz. All rights reserved.</p> : <p>Loading year...</p>}
+        <p>Built with Next.js & ShadCN UI. Data from Excel.</p>
+      </footer>
+    </main>
+  );
+}
