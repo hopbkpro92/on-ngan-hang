@@ -21,26 +21,63 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
         }
 
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        const worksheetName = workbook.SheetNames[0];
-        if (!worksheetName) {
-            throw new Error(`No sheets found in '${fileName}'.`);
+
+        // Get visible sheets only
+        const visibleSheets = workbook.SheetNames.filter(name => {
+            // Check if the sheet is hidden
+            const sheet = workbook.Sheets[name];
+            const sheetVisible = !(workbook.Workbook?.Sheets?.find(s => s.name === name)?.Hidden);
+            return sheetVisible;
+        });
+
+        if (visibleSheets.length === 0) {
+            throw new Error(`No visible sheets found in '${fileName}'.`);
         }
+
+        console.log(`Processing file ${fileName}: Found ${workbook.SheetNames.length} total sheets, ${visibleSheets.length} visible`);
+
+        const worksheetName = visibleSheets[0];
         const worksheet = workbook.Sheets[worksheetName];
         if (!worksheet) {
             throw new Error(`Sheet '${worksheetName}' could not be read from '${fileName}'.`);
         }
 
-        const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        // Track statistics for diagnostics
+        const stats = {
+            totalRows: 0,
+            emptyRows: 0,
+            malformedRows: 0,
+            invalidIdRows: 0,
+            emptyQuestionRows: 0,
+            invalidAnswerRows: 0,
+            validQuestions: 0,
+            duplicateIds: 0,
+            hiddenSheets: workbook.SheetNames.length - visibleSheets.length
+        };
+
+        // Use defval: null to clearly distinguish truly empty cells
+        const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+        stats.totalRows = jsonData.length;
 
         const questions: Question[] = [];
-        for (const row of jsonData) {
-            // Skip fully empty rows or rows that don't look like question data
-            if (!row || row.length === 0 || row.every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
+        const seenIds = new Set<number>(); // Track seen IDs to prevent duplicates
+
+        // Skip header row if present (typically has column titles)
+        const startRowIndex = isHeaderRow(jsonData[0]) ? 1 : 0;
+
+        for (let i = startRowIndex; i < jsonData.length; i++) {
+            const row = jsonData[i];
+
+            // Skip truly empty rows (completely null or empty cells)
+            if (!row || row.length === 0 || isEmptyRow(row)) {
+                stats.emptyRows++;
                 continue;
             }
+
             // Expect at least 7 columns: ID, Question, 4 Options, CorrectAnswerIndex
             if (row.length < 7) {
-                console.warn(`Skipping malformed row in ${fileName} (not enough columns, expected 7, got ${row.length}):`, row);
+                console.warn(`Skipping malformed row ${i + 1} in ${fileName} (not enough columns, expected 7, got ${row.length}):`, row);
+                stats.malformedRows++;
                 continue;
             }
 
@@ -55,27 +92,37 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
             const correctAnswerNum = Number(row[6]);
 
             if (isNaN(id) || id <= 0) {
-                console.warn(`Skipping row in ${fileName} due to invalid ID (value: ${row[0]}):`, row);
+                console.warn(`Skipping row ${i + 1} in ${fileName} due to invalid ID (value: ${row[0]}):`, row);
+                stats.invalidIdRows++;
                 continue;
             }
+
+            // Check for duplicate IDs
+            if (seenIds.has(id)) {
+                console.warn(`Duplicate ID ${id} found in row ${i + 1}. Skipping duplicate.`);
+                stats.duplicateIds++;
+                continue;
+            }
+            seenIds.add(id);
+
             if (!questionText) {
-                console.warn(`Skipping row in ${fileName} due to empty question text:`, row);
+                console.warn(`Skipping row ${i + 1} in ${fileName} due to empty question text:`, row);
+                stats.emptyQuestionRows++;
                 continue;
             }
-            // Ensure all 4 options are present, even if empty strings. UI expects 4.
-            // If any option is strictly undefined or null (not just empty string), it might indicate parsing issue or bad data.
-            // For now, String(row[x] || '') handles this by converting to empty string.
 
             if (isNaN(correctAnswerNum) || correctAnswerNum < 1 || correctAnswerNum > 4) {
-                console.warn(`Skipping row in ${fileName} due to invalid correct answer index (value: ${row[6]}, must be 1-4):`, row);
-                continue;
-            }
-            // Check if the option designated as correct is non-empty
-            if (!options[correctAnswerNum - 1]) {
-                console.warn(`Skipping row in ${fileName} because the correct option (index ${correctAnswerNum}, text: "${options[correctAnswerNum - 1]}") is empty:`, row);
+                console.warn(`Skipping row ${i + 1} in ${fileName} due to invalid correct answer index (value: ${row[6]}, must be 1-4):`, row);
+                stats.invalidAnswerRows++;
                 continue;
             }
 
+            // Check if the option designated as correct is non-empty
+            if (!options[correctAnswerNum - 1]) {
+                console.warn(`Skipping row ${i + 1} in ${fileName} because the correct option (index ${correctAnswerNum}, text: "${options[correctAnswerNum - 1]}") is empty:`, row);
+                stats.invalidAnswerRows++;
+                continue;
+            }
 
             questions.push({
                 id,
@@ -83,12 +130,14 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
                 options,
                 correctAnswerIndex: correctAnswerNum - 1, // Convert 1-based to 0-based
             });
+            stats.validQuestions++;
         }
 
-        if (questions.length === 0 && jsonData.some(r => r && r.length > 0 && !r.every(cell => cell === null || cell === undefined || String(cell).trim() === ''))) {
+        console.log(`File ${fileName} parsing stats:`, stats);
+        console.log(`Loaded ${questions.length} questions from ${stats.totalRows} rows`);
+
+        if (questions.length === 0 && stats.totalRows > 0) {
             console.warn(`No valid questions were processed from '${fileName}', though the file appeared to contain data. Please check data format, content, and console logs for skipped rows.`);
-            // Depending on requirements, you might throw an error here or return empty questions.
-            // For now, returning empty questions allows the UI to state "No questions found in this file."
         }
 
         return questions;
@@ -96,11 +145,30 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
     } catch (error) {
         console.error(`Error loading quiz data from ${fileName}:`, error);
         if (error instanceof Error) {
-            // Prepend a user-friendly part to the error message.
             throw new Error(`Could not load or parse quiz data from '${fileName}'. ${error.message}`);
         }
         throw new Error(`Could not load or parse quiz data from '${fileName}'. An unknown error occurred.`);
     }
+}
+
+// Helper function to determine if a row is truly empty
+function isEmptyRow(row: any[]): boolean {
+    return row.every(cell =>
+        cell === null ||
+        cell === undefined ||
+        String(cell).trim() === ''
+    );
+}
+
+// Helper function to detect header rows (usually text headers not number IDs in first column)
+function isHeaderRow(row: any[]): boolean {
+    if (!row || row.length === 0) return false;
+    // If first cell is not a number but contains text, likely a header
+    const firstCell = row[0];
+    return firstCell !== null &&
+        isNaN(Number(firstCell)) &&
+        typeof firstCell === 'string' &&
+        firstCell.trim() !== '';
 }
 
 export async function listAvailableQuizFiles(): Promise<string[]> {
