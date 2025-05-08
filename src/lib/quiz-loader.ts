@@ -172,26 +172,45 @@ function isHeaderRow(row: any[]): boolean {
 }
 
 export async function listAvailableQuizFiles(): Promise<string[]> {
+    // Retry parameters
+    const maxRetries = 5;
+    const retryDelay = 1000; // 1 second
+
+    // Helper function to retry with exponential backoff
+    const fetchWithRetry = async (url: string, retries: number): Promise<Response> => {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                return response;
+            }
+            throw new Error(`Failed to fetch: ${response.statusText} (${response.status})`);
+        } catch (error) {
+            if (retries > 0) {
+                console.log(`Retrying fetch (${maxRetries - retries + 1}/${maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                return fetchWithRetry(url, retries - 1);
+            }
+            throw error;
+        }
+    };
+
     try {
-        // Fallback for production (Vercel): fetch the list from a JSON file
         if (!process.env.NEXT_PUBLIC_APP_URL) {
             console.warn("NEXT_PUBLIC_APP_URL environment variable is not set");
-            return []; // Return empty array instead of throwing
+            return [];
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/quiz-files.json`);
+        const quizFilesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/quiz-files.json`;
+        console.log(`Fetching quiz files from: ${quizFilesUrl}`);
 
-        if (!response.ok) {
-            console.error(`Failed to fetch quiz file list: ${response.statusText} (${response.status})`);
-            console.info("Make sure you have a quiz-files.json file in your public directory that lists all your quiz files.");
-            return []; // Return empty array instead of throwing
-        }
+        // Use retry mechanism
+        const response = await fetchWithRetry(quizFilesUrl, maxRetries);
 
         const fileList = await response.json();
 
         if (!Array.isArray(fileList)) {
             console.error("Invalid quiz file list format: expected an array");
-            return []; // Return empty array instead of throwing
+            return [];
         }
 
         // Filter and sort the Excel files
@@ -201,12 +220,13 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
 
         if (excelFiles.length === 0) {
             console.warn("No quiz files (.xlsx or .xls) found in quiz-files.json");
+        } else {
+            console.log(`Successfully loaded ${excelFiles.length} quiz files`);
         }
 
         return excelFiles;
     } catch (error) {
         console.error("Failed to list available quiz files:", error);
-        // Return empty array instead of throwing error
         return [];
     }
 }
