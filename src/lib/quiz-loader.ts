@@ -7,7 +7,10 @@ import path from 'path';
 
 export async function loadQuizData(fileName: string): Promise<Question[]> {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/${fileName}`);
+        // Properly encode the filename to handle special characters and spaces
+        const encodedFileName = encodeURIComponent(fileName);
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/${encodedFileName}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch ${fileName}: ${response.statusText} (status: ${response.status})`);
         }
@@ -102,24 +105,6 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
 
 export async function listAvailableQuizFiles(): Promise<string[]> {
     try {
-        // First try using filesystem approach (works in development)
-        try {
-            const publicDirectory = path.join(process.cwd(), 'public');
-            const dirents = await fs.readdir(publicDirectory, { withFileTypes: true });
-            const excelFiles = dirents
-                .filter(dirent => dirent.isFile() && (dirent.name.endsWith('.xlsx') || dirent.name.endsWith('.xls')))
-                .map(dirent => dirent.name)
-                .sort();
-
-            // If we got files, return them
-            if (excelFiles.length > 0) {
-                return excelFiles;
-            }
-        } catch (fsError) {
-            console.log("Filesystem approach failed, falling back to fetch:", fsError);
-            // Continue to the fetch approach
-        }
-
         // Fallback for production (Vercel): fetch the list from a JSON file
         if (!process.env.NEXT_PUBLIC_APP_URL) {
             console.warn("NEXT_PUBLIC_APP_URL environment variable is not set");
@@ -130,6 +115,7 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
 
         if (!response.ok) {
             console.error(`Failed to fetch quiz file list: ${response.statusText} (${response.status})`);
+            console.info("Make sure you have a quiz-files.json file in your public directory that lists all your quiz files.");
             return []; // Return empty array instead of throwing
         }
 
@@ -144,6 +130,10 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
         const excelFiles = fileList
             .filter(filename => typeof filename === 'string' && (filename.endsWith('.xlsx') || filename.endsWith('.xls')))
             .sort();
+
+        if (excelFiles.length === 0) {
+            console.warn("No quiz files (.xlsx or .xls) found in quiz-files.json");
+        }
 
         return excelFiles;
     } catch (error) {
