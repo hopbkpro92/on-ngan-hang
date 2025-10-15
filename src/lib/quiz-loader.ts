@@ -230,3 +230,88 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
         return [];
     }
 }
+
+/**
+ * Load questions from all quiz files with proportional distribution
+ * @param totalQuestions - Total number of questions to load (default: 100)
+ * @returns Array of questions distributed proportionally across all files
+ */
+export async function loadExamQuestions(totalQuestions: number = 100): Promise<Question[]> {
+    try {
+        const files = await listAvailableQuizFiles();
+
+        if (files.length === 0) {
+            throw new Error("No quiz files available for exam mode");
+        }
+
+        console.log(`Loading exam questions from ${files.length} files...`);
+
+        // Load all questions from all files
+        const allFileQuestions: { fileName: string; questions: Question[] }[] = [];
+        let totalAvailableQuestions = 0;
+
+        for (const file of files) {
+            try {
+                const questions = await loadQuizData(file);
+                if (questions.length > 0) {
+                    allFileQuestions.push({ fileName: file, questions });
+                    totalAvailableQuestions += questions.length;
+                    console.log(`Loaded ${questions.length} questions from ${file}`);
+                }
+            } catch (error) {
+                console.warn(`Failed to load ${file}, skipping:`, error);
+            }
+        }
+
+        if (totalAvailableQuestions === 0) {
+            throw new Error("No valid questions found in any quiz file");
+        }
+
+        console.log(`Total available questions: ${totalAvailableQuestions}`);
+
+        // Calculate proportional distribution
+        const examQuestions: Question[] = [];
+        const questionsToGet = Math.min(totalQuestions, totalAvailableQuestions);
+
+        for (const fileData of allFileQuestions) {
+            const proportion = fileData.questions.length / totalAvailableQuestions;
+            const questionsFromThisFile = Math.round(questionsToGet * proportion);
+
+            console.log(`Getting ${questionsFromThisFile} questions from ${fileData.fileName} (${fileData.questions.length} available, ${(proportion * 100).toFixed(1)}%)`);
+
+            // Randomly select questions from this file
+            const shuffled = [...fileData.questions].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, Math.min(questionsFromThisFile, fileData.questions.length));
+
+            examQuestions.push(...selected);
+        }
+
+        // If we don't have exactly the right number due to rounding, adjust
+        if (examQuestions.length < questionsToGet) {
+            // Add more random questions from any file
+            const allQuestions = allFileQuestions.flatMap(f => f.questions);
+            const existingIds = new Set(examQuestions.map(q => q.id));
+            const availableQuestions = allQuestions.filter(q => !existingIds.has(q.id));
+
+            const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
+            const needed = questionsToGet - examQuestions.length;
+            examQuestions.push(...shuffled.slice(0, needed));
+        } else if (examQuestions.length > questionsToGet) {
+            // Remove excess questions
+            examQuestions.length = questionsToGet;
+        }
+
+        // Final shuffle to mix questions from different files
+        const finalQuestions = [...examQuestions].sort(() => 0.5 - Math.random());
+
+        console.log(`Exam ready with ${finalQuestions.length} questions from ${allFileQuestions.length} files`);
+
+        return finalQuestions;
+    } catch (error) {
+        console.error("Error loading exam questions:", error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to load exam questions: ${error.message}`);
+        }
+        throw new Error("Failed to load exam questions: An unknown error occurred");
+    }
+}
