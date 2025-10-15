@@ -6,7 +6,7 @@ import type { QuizMode } from "@/app/page";
 import QuestionDisplayCard from "./QuestionDisplayCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowRight, ArrowLeft, CheckSquare } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckSquare } from "lucide-react";
 
 interface QuizAreaProps {
   questions: Question[];
@@ -90,7 +90,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
                             size="default"
                             variant="outline"
                         >
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                            <ChevronLeft className="h-6 w-6" strokeWidth={3} />
                         </Button>
                     )}
                     {currentQuestionIndex < questions.length - 1 ? (
@@ -100,7 +100,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
                             size="default"
                             variant="outline"
                         >
-                            Next Question <ArrowRight className="ml-2 h-4 w-4" />
+                            <ChevronRight className="h-6 w-6" strokeWidth={3} />
                         </Button>
                     ) : (
                         <Button
@@ -109,7 +109,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
                             size="default"
                             variant="outline"
                         >
-                            Submit Quiz <CheckSquare className="ml-2 h-4 w-4" />
+                            Submit <CheckSquare className="ml-2 h-4 w-4" />
                         </Button>
                     )}
                 </div>
