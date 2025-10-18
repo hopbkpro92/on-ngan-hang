@@ -1,10 +1,42 @@
 [
-    "8. Kế toán giao dịch khách hàng.xlsx",
-    "9. Kiểm ngân-P1.xlsx",
-    "9. Kiểm ngân-P2.xlsx",
-    "17. Kiến thức chung-P1.xlsx",
-    "17. Kiến thức chung-P2.xlsx",
-    "17. Kiến thức chung-P3.xlsx",
-    "17. Quản ký cấp phòng.xlsx",
-    "17. Tiêu chuẩn tác phong GDV.xlsx"
+    {
+        "path": "8. Kế toán giao dịch khách hàng.xlsx",
+        "role": "Kế toán",
+        "examQuestions": 75
+    },
+    {
+        "path": "9. Kiểm ngân-P1.xlsx",
+        "role": "Kiểm ngân",
+        "examQuestions": 38
+    },
+    {
+        "path": "9. Kiểm ngân-P2.xlsx",
+        "role": "Kiểm ngân",
+        "examQuestions": 37
+    },
+    {
+        "path": "17. Kiến thức chung-P1.xlsx",
+        "role": "Kiến thức chung",
+        "examQuestions": 8
+    },
+    {
+        "path": "17. Kiến thức chung-P2.xlsx",
+        "role": "Kiến thức chung",
+        "examQuestions": 7
+    },
+    {
+        "path": "17. Kiến thức chung-P3.xlsx",
+        "role": "Kiến thức chung",
+        "examQuestions": 7
+    },
+    {
+        "path": "17. Quản ký cấp phòng.xlsx",
+        "role": "Quản lý",
+        "examQuestions": 75
+    },
+    {
+        "path": "17. Tiêu chuẩn tác phong GDV.xlsx",
+        "role": "Kiến thức chung",
+        "examQuestions": 3
+    }
 ]

@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Question } from "@/lib/quiz-data";
+import type { Question, QuizFileMetadata, UserRole } from "@/lib/quiz-data";
 import { loadQuizData, listAvailableQuizFiles, loadExamQuestions } from "@/lib/quiz-loader";
 import QuizSetup from "@/components/quiz/QuizSetup";
 import QuizArea from "@/components/quiz/QuizArea";
 import QuizResults from "@/components/quiz/QuizResults";
-import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket } from "lucide-react";
+import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -26,8 +26,9 @@ export default function Home() {
     const [currentYear, setCurrentYear] = useState<number | null>(null);
     const [quizMode, setQuizMode] = useState<QuizMode>("testing");
 
-    const [availableFiles, setAvailableFiles] = useState<string[]>([]);
-    const [selectedFile, setSelectedFile] = useState<string | undefined>(undefined);
+    const [availableFiles, setAvailableFiles] = useState<QuizFileMetadata[]>([]);
+    const [selectedFile, setSelectedFile] = useState<QuizFileMetadata | undefined>(undefined);
+    const [userRole, setUserRole] = useState<UserRole>("Kế toán");
 
     useEffect(() => {
         setCurrentYear(new Date().getFullYear());
@@ -36,7 +37,7 @@ export default function Home() {
             setIsLoading(true);
             setError(null);
             try {
-                const files = await listAvailableQuizFiles();
+                const files = await listAvailableQuizFiles(userRole);
                 setAvailableFiles(files);
 
                 if (files.length > 0) {
@@ -56,7 +57,7 @@ export default function Home() {
             }
         };
         initializeQuizData();
-    }, []);
+    }, [userRole]);
 
     useEffect(() => {
         if (!selectedFile) {
@@ -71,20 +72,20 @@ export default function Home() {
             setError(null);
 
             try {
-                const data = await loadQuizData(selectedFile);
+                const data = await loadQuizData(selectedFile.path);
                 if (data && data.length > 0) {
                     setAllLoadedQuestions(data);
                 } else {
                     setAllLoadedQuestions([]);
-                    setError(`No valid questions found in '${selectedFile}'. Please ensure it's correctly formatted and contains data.`);
+                    setError(`No valid questions found in '${selectedFile.path}'. Please ensure it's correctly formatted and contains data.`);
                 }
             } catch (err) {
-                console.error(`Failed to load quiz data from ${selectedFile}:`, err);
+                console.error(`Failed to load quiz data from ${selectedFile.path}:`, err);
                 setAllLoadedQuestions([]);
                 if (err instanceof Error) {
                     setError(err.message);
                 } else {
-                    setError(`An unexpected error occurred while loading data from '${selectedFile}'.`);
+                    setError(`An unexpected error occurred while loading data from '${selectedFile.path}'.`);
                 }
             } finally {
                 setIsLoading(false);
@@ -95,12 +96,12 @@ export default function Home() {
 
     const handleStartQuiz = useCallback((numQuestions: number, mode: QuizMode) => {
         if (mode === "exam") {
-            // For exam mode, we'll load questions from all files
+            // For exam mode, we'll load questions from files based on user role
             setQuizMode(mode);
             setIsLoading(true);
             setError(null);
 
-            loadExamQuestions(numQuestions)
+            loadExamQuestions(userRole, numQuestions)
                 .then((examQuestions) => {
                     if (examQuestions.length === 0) {
                         setError("Could not load exam questions. Please check that quiz files are available.");
@@ -134,7 +135,7 @@ export default function Home() {
         setCurrentQuizQuestions(randomQuestions);
         setUserAnswers(Array(randomQuestions.length).fill(null));
         setQuizState("active");
-    }, [allLoadedQuestions]);
+    }, [allLoadedQuestions, userRole]);
 
     const handleQuizComplete = useCallback((answers: (number | null)[]) => {
         setUserAnswers(answers);
@@ -149,11 +150,23 @@ export default function Home() {
     }, []);
 
     const handleFileChange = (value: string) => {
-        setSelectedFile(value);
+        const file = availableFiles.find(f => f.path === value);
+        if (file) {
+            setSelectedFile(file);
+            setQuizState("setup");
+            setCurrentQuizQuestions([]);
+            setUserAnswers([]);
+            setAllLoadedQuestions([]);
+        }
+    };
+
+    const handleRoleChange = (value: string) => {
+        setUserRole(value as UserRole);
         setQuizState("setup");
         setCurrentQuizQuestions([]);
         setUserAnswers([]);
         setAllLoadedQuestions([]);
+        setSelectedFile(undefined);
     };
 
     const showGlobalLoader = isLoading && (availableFiles.length === 0 || !selectedFile || (!!selectedFile && allLoadedQuestions.length === 0 && !error));
@@ -164,7 +177,7 @@ export default function Home() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
                 <p className="text-xl font-semibold">Loading Quiz Whiz...</p>
                 {(!selectedFile && availableFiles.length === 0) && <p className="text-sm text-muted-foreground mt-2">Searching for quiz files...</p>}
-                {(selectedFile && allLoadedQuestions.length === 0 && !error) && <p className="text-sm text-muted-foreground mt-2">Fetching questions from {selectedFile}...</p>}
+                {(selectedFile && allLoadedQuestions.length === 0 && !error) && <p className="text-sm text-muted-foreground mt-2">Fetching questions from {selectedFile.path}...</p>}
             </main>
         );
     }
@@ -193,45 +206,105 @@ export default function Home() {
             </header>
 
             <div className="w-full px-4 sm:px-6 lg:px-8">
-                {availableFiles.length > 0 && quizState === "setup" && quizMode !== "exam" ? (
-                    <Card className="mb-4 shadow-md w-full mx-auto">
-                        <CardHeader className="p-3 md:p-4">
-                            <CardTitle className="text-md md:text-lg flex items-center justify-center">
-                                <FileText className="mr-2 h-4 w-4 md:h-5 md:w-5 text-primary" />
-                                Select Quiz File
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3 md:p-4 pt-0">
-                            <Label htmlFor="quizFileSelect" className="sr-only">Select Quiz File</Label>
-                            <Select onValueChange={handleFileChange} value={selectedFile || ""}>
-                                <SelectTrigger id="quizFileSelect" className="w-full text-sm md:text-base">
-                                    <SelectValue placeholder="Select a quiz file" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableFiles.map((file) => (
-                                        <SelectItem key={file} value={file} className="text-sm md:text-base">
-                                            {file}
+                {availableFiles.length > 0 && quizState === "setup" ? (
+                    <>
+                        <Card className="mb-4 shadow-md w-full mx-auto">
+                            <CardHeader className="p-3 md:p-4">
+                                <CardTitle className="text-md md:text-lg flex items-center justify-center">
+                                    <Users className="mr-2 h-4 w-4 md:h-5 md:w-5 text-primary" />
+                                    Select Your Role
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 md:p-4 pt-0">
+                                <Label htmlFor="roleSelect" className="sr-only">Select Role</Label>
+                                <Select onValueChange={handleRoleChange} value={userRole}>
+                                    <SelectTrigger id="roleSelect" className="w-full text-sm md:text-base">
+                                        <SelectValue placeholder="Select your role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Kế toán" className="text-sm md:text-base">
+                                            Kế toán
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {error && selectedFile && <p className="text-destructive text-xs md:text-sm mt-2 text-center">{error}</p>}
-                        </CardContent>
-                    </Card>
+                                        <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
+                                            Kiểm ngân
+                                        </SelectItem>
+                                        <SelectItem value="Quản lý" className="text-sm md:text-base">
+                                            Quản lý
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </CardContent>
+                        </Card>
+                        {quizMode !== "exam" && (
+                            <Card className="mb-4 shadow-md w-full mx-auto">
+                                <CardHeader className="p-3 md:p-4">
+                                    <CardTitle className="text-md md:text-lg flex items-center justify-center">
+                                        <FileText className="mr-2 h-4 w-4 md:h-5 md:w-5 text-primary" />
+                                        Select Quiz File
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 md:p-4 pt-0">
+                                    <Label htmlFor="quizFileSelect" className="sr-only">Select Quiz File</Label>
+                                    <Select onValueChange={handleFileChange} value={selectedFile?.path || ""}>
+                                        <SelectTrigger id="quizFileSelect" className="w-full text-sm md:text-base">
+                                            <SelectValue placeholder="Select a quiz file" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableFiles.map((file) => (
+                                                <SelectItem key={file.path} value={file.path} className="text-sm md:text-base">
+                                                    {file.path}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {error && selectedFile && <p className="text-destructive text-xs md:text-sm mt-2 text-center">{error}</p>}
+                                </CardContent>
+                            </Card>
+                        )}
+                    </>
                 ) : quizState === "setup" && quizMode === "exam" ? (
-                    <Card className="mb-4 shadow-md w-full mx-auto">
-                        <CardHeader className="p-3 md:p-4">
-                            <CardTitle className="text-md md:text-lg flex items-center justify-center text-green-600">
-                                <Rocket className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                                Exam Mode
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3 md:p-4 pt-0">
-                            <p className="text-center text-muted-foreground text-sm md:text-base">
-                                Questions will be loaded from all available quiz files with proportional distribution.
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <>
+                        <Card className="mb-4 shadow-md w-full mx-auto">
+                            <CardHeader className="p-3 md:p-4">
+                                <CardTitle className="text-md md:text-lg flex items-center justify-center">
+                                    <Users className="mr-2 h-4 w-4 md:h-5 md:w-5 text-primary" />
+                                    Select Your Role
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 md:p-4 pt-0">
+                                <Label htmlFor="roleSelectExam" className="sr-only">Select Role</Label>
+                                <Select onValueChange={handleRoleChange} value={userRole}>
+                                    <SelectTrigger id="roleSelectExam" className="w-full text-sm md:text-base">
+                                        <SelectValue placeholder="Select your role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Kế toán" className="text-sm md:text-base">
+                                            Kế toán
+                                        </SelectItem>
+                                        <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
+                                            Kiểm ngân
+                                        </SelectItem>
+                                        <SelectItem value="Quản lý" className="text-sm md:text-base">
+                                            Quản lý
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </CardContent>
+                        </Card>
+                        <Card className="mb-4 shadow-md w-full mx-auto">
+                            <CardHeader className="p-3 md:p-4">
+                                <CardTitle className="text-md md:text-lg flex items-center justify-center text-green-600">
+                                    <Rocket className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                    Exam Mode
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 md:p-4 pt-0">
+                                <p className="text-center text-muted-foreground text-sm md:text-base">
+                                    Questions will be loaded from files matching your role ({userRole}) and common knowledge files.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </>
                 ) : (
                     !isLoading && !error && availableFiles.length === 0 &&
                     <Card className="mb-4 shadow-md w-full mx-auto">

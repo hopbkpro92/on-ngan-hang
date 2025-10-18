@@ -162,7 +162,7 @@ export default function QuizSetup({
                     <p className="text-xs md:text-sm text-muted-foreground">
                         Testing: Answers revealed at the end.<br />
                         Learning: Immediate feedback per question.<br />
-                        Exam: 100 questions from all files.
+                        Exam: Questions from role-specific and common knowledge files.
                     </p>
                 </div>
             </CardContent>

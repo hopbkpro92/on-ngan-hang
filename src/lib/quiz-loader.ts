@@ -1,15 +1,89 @@
 'use server';
 
-import type { Question } from "./quiz-data";
+import type { Question, QuizFileMetadata, UserRole } from "./quiz-data";
 import * as XLSX from 'xlsx';
 import fs from 'fs/promises';
 import path from 'path';
 
 export async function loadQuizData(fileName: string): Promise<Question[]> {
     try {
-        // Properly encode the filename to handle special characters and spaces
-        const encodedFileName = encodeURIComponent(fileName);
+        // Server-side: read file directly from filesystem
+        if (typeof window === 'undefined') {
+            // Normalize the filename to handle Unicode character variations (NFC form)
+            const normalizedFileName = fileName.normalize('NFC');
+            const filePath = path.join(process.cwd(), 'public', normalizedFileName);
 
+            // Try to read with normalized filename first
+            try {
+                const fileBuffer = await fs.readFile(filePath);
+                const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+
+                // Get visible sheets only
+                const visibleSheets = workbook.SheetNames.filter(name => {
+                    const sheetVisible = !(workbook.Workbook?.Sheets?.find(s => s.name === name)?.Hidden);
+                    return sheetVisible;
+                });
+
+                if (visibleSheets.length === 0) {
+                    throw new Error(`No visible sheets found in '${fileName}'.`);
+                }
+
+                console.log(`Processing file ${fileName}: Found ${workbook.SheetNames.length} total sheets, ${visibleSheets.length} visible`);
+
+                const worksheetName = visibleSheets[0];
+                const worksheet = workbook.Sheets[worksheetName];
+                if (!worksheet) {
+                    throw new Error(`Sheet '${worksheetName}' could not be read from '${fileName}'.`);
+                }
+
+                return parseWorksheet(worksheet, fileName);
+            } catch (readError: any) {
+                // If normalized version fails, try to find the file by listing directory
+                if (readError.code === 'ENOENT') {
+                    const publicDir = path.join(process.cwd(), 'public');
+                    const files = await fs.readdir(publicDir);
+
+                    // Find file with case-insensitive and normalization-insensitive match
+                    const matchingFile = files.find(file => {
+                        const normalizedFile = file.normalize('NFC');
+                        const normalizedSearch = fileName.normalize('NFC');
+                        return normalizedFile.toLowerCase() === normalizedSearch.toLowerCase() ||
+                            file.toLowerCase() === fileName.toLowerCase();
+                    });
+
+                    if (matchingFile) {
+                        console.log(`Found file with different normalization: "${matchingFile}" for requested "${fileName}"`);
+                        const actualFilePath = path.join(publicDir, matchingFile);
+                        const fileBuffer = await fs.readFile(actualFilePath);
+                        const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+
+                        // Get visible sheets only
+                        const visibleSheets = workbook.SheetNames.filter(name => {
+                            const sheetVisible = !(workbook.Workbook?.Sheets?.find(s => s.name === name)?.Hidden);
+                            return sheetVisible;
+                        });
+
+                        if (visibleSheets.length === 0) {
+                            throw new Error(`No visible sheets found in '${fileName}'.`);
+                        }
+
+                        console.log(`Processing file ${fileName}: Found ${workbook.SheetNames.length} total sheets, ${visibleSheets.length} visible`);
+
+                        const worksheetName = visibleSheets[0];
+                        const worksheet = workbook.Sheets[worksheetName];
+                        if (!worksheet) {
+                            throw new Error(`Sheet '${worksheetName}' could not be read from '${fileName}'.`);
+                        }
+
+                        return parseWorksheet(worksheet, fileName);
+                    }
+                }
+                throw readError;
+            }
+        }
+
+        // Client-side: fetch from public URL (should rarely happen with server actions)
+        const encodedFileName = encodeURIComponent(fileName);
         const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/${encodedFileName}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch ${fileName}: ${response.statusText} (status: ${response.status})`);
@@ -24,8 +98,6 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
 
         // Get visible sheets only
         const visibleSheets = workbook.SheetNames.filter(name => {
-            // Check if the sheet is hidden
-            const sheet = workbook.Sheets[name];
             const sheetVisible = !(workbook.Workbook?.Sheets?.find(s => s.name === name)?.Hidden);
             return sheetVisible;
         });
@@ -42,6 +114,19 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
             throw new Error(`Sheet '${worksheetName}' could not be read from '${fileName}'.`);
         }
 
+        return parseWorksheet(worksheet, fileName);
+    } catch (error) {
+        console.error(`Error loading quiz data from ${fileName}:`, error);
+        if (error instanceof Error) {
+            throw new Error(`Could not load or parse quiz data from '${fileName}'. ${error.message}`);
+        }
+        throw new Error(`Could not load or parse quiz data from '${fileName}'. An unknown error occurred.`);
+    }
+}
+
+// Helper function to parse worksheet data
+function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[] {
+    try {
         // Track statistics for diagnostics
         const stats = {
             totalRows: 0,
@@ -51,8 +136,7 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
             emptyQuestionRows: 0,
             invalidAnswerRows: 0,
             validQuestions: 0,
-            duplicateIds: 0,
-            hiddenSheets: workbook.SheetNames.length - visibleSheets.length
+            duplicateIds: 0
         };
 
         // Use defval: null to clearly distinguish truly empty cells
@@ -171,7 +255,7 @@ function isHeaderRow(row: any[]): boolean {
         firstCell.trim() !== '';
 }
 
-export async function listAvailableQuizFiles(): Promise<string[]> {
+export async function listAvailableQuizFiles(userRole?: UserRole): Promise<QuizFileMetadata[]> {
     // Retry parameters
     const maxRetries = 5;
     const retryDelay = 1000; // 1 second
@@ -213,18 +297,33 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
             return [];
         }
 
-        // Filter and sort the Excel files
-        const excelFiles = fileList
-            .filter(filename => typeof filename === 'string' && (filename.endsWith('.xlsx') || filename.endsWith('.xls')))
-            .sort();
+        // Validate the new structure
+        const validFiles: QuizFileMetadata[] = fileList.filter(item => {
+            return (
+                typeof item === 'object' &&
+                typeof item.path === 'string' &&
+                typeof item.role === 'string' &&
+                typeof item.examQuestions === 'number' &&
+                (item.path.endsWith('.xlsx') || item.path.endsWith('.xls'))
+            );
+        });
 
-        if (excelFiles.length === 0) {
-            console.warn("No quiz files (.xlsx or .xls) found in quiz-files.json");
-        } else {
-            console.log(`Successfully loaded ${excelFiles.length} quiz files`);
+        if (validFiles.length === 0) {
+            console.warn("No valid quiz files found in quiz-files.json");
+            return [];
         }
 
-        return excelFiles;
+        // Filter by user role if provided
+        let filteredFiles = validFiles;
+        if (userRole) {
+            filteredFiles = validFiles.filter(file =>
+                file.role === userRole || file.role === "Kiến thức chung"
+            );
+            console.log(`Filtered to ${filteredFiles.length} files for role: ${userRole} (including common knowledge)`);
+        }
+
+        console.log(`Successfully loaded ${filteredFiles.length} quiz files`);
+        return filteredFiles;
     } catch (error) {
         console.error("Failed to list available quiz files:", error);
         return [];
@@ -232,79 +331,59 @@ export async function listAvailableQuizFiles(): Promise<string[]> {
 }
 
 /**
- * Load questions from all quiz files with proportional distribution
+ * Load questions from quiz files based on user role with specified question counts
+ * @param userRole - The user's role (Kế toán, Kiểm ngân, or Quản lý)
  * @param totalQuestions - Total number of questions to load (default: 100)
- * @returns Array of questions distributed proportionally across all files
+ * @returns Array of questions distributed according to examQuestions specification
  */
-export async function loadExamQuestions(totalQuestions: number = 100): Promise<Question[]> {
+export async function loadExamQuestions(userRole: UserRole, totalQuestions: number = 100): Promise<Question[]> {
     try {
-        const files = await listAvailableQuizFiles();
+        const files = await listAvailableQuizFiles(userRole);
 
         if (files.length === 0) {
-            throw new Error("No quiz files available for exam mode");
+            throw new Error(`No quiz files available for role: ${userRole}`);
         }
 
-        console.log(`Loading exam questions from ${files.length} files...`);
+        console.log(`Loading exam questions for role: ${userRole} from ${files.length} files...`);
 
-        // Load all questions from all files
-        const allFileQuestions: { fileName: string; questions: Question[] }[] = [];
-        let totalAvailableQuestions = 0;
+        // Load questions from each file
+        const allFileQuestions: { metadata: QuizFileMetadata; questions: Question[] }[] = [];
 
-        for (const file of files) {
+        for (const fileMetadata of files) {
             try {
-                const questions = await loadQuizData(file);
+                const questions = await loadQuizData(fileMetadata.path);
                 if (questions.length > 0) {
-                    allFileQuestions.push({ fileName: file, questions });
-                    totalAvailableQuestions += questions.length;
-                    console.log(`Loaded ${questions.length} questions from ${file}`);
+                    allFileQuestions.push({ metadata: fileMetadata, questions });
+                    console.log(`Loaded ${questions.length} questions from ${fileMetadata.path} (Role: ${fileMetadata.role})`);
                 }
             } catch (error) {
-                console.warn(`Failed to load ${file}, skipping:`, error);
+                console.warn(`Failed to load ${fileMetadata.path}, skipping:`, error);
             }
         }
 
-        if (totalAvailableQuestions === 0) {
+        if (allFileQuestions.length === 0) {
             throw new Error("No valid questions found in any quiz file");
         }
 
-        console.log(`Total available questions: ${totalAvailableQuestions}`);
-
-        // Calculate proportional distribution
+        // Select questions based on examQuestions specification
         const examQuestions: Question[] = [];
-        const questionsToGet = Math.min(totalQuestions, totalAvailableQuestions);
 
         for (const fileData of allFileQuestions) {
-            const proportion = fileData.questions.length / totalAvailableQuestions;
-            const questionsFromThisFile = Math.round(questionsToGet * proportion);
+            const questionsToGet = Math.min(fileData.metadata.examQuestions, fileData.questions.length);
 
-            console.log(`Getting ${questionsFromThisFile} questions from ${fileData.fileName} (${fileData.questions.length} available, ${(proportion * 100).toFixed(1)}%)`);
+            console.log(`Getting ${questionsToGet} questions from ${fileData.metadata.path} (specified: ${fileData.metadata.examQuestions}, available: ${fileData.questions.length})`);
 
-            // Randomly select questions from this file
+            // Randomly select the specified number of questions from this file
             const shuffled = [...fileData.questions].sort(() => 0.5 - Math.random());
-            const selected = shuffled.slice(0, Math.min(questionsFromThisFile, fileData.questions.length));
+            const selected = shuffled.slice(0, questionsToGet);
 
             examQuestions.push(...selected);
-        }
-
-        // If we don't have exactly the right number due to rounding, adjust
-        if (examQuestions.length < questionsToGet) {
-            // Add more random questions from any file
-            const allQuestions = allFileQuestions.flatMap(f => f.questions);
-            const existingIds = new Set(examQuestions.map(q => q.id));
-            const availableQuestions = allQuestions.filter(q => !existingIds.has(q.id));
-
-            const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
-            const needed = questionsToGet - examQuestions.length;
-            examQuestions.push(...shuffled.slice(0, needed));
-        } else if (examQuestions.length > questionsToGet) {
-            // Remove excess questions
-            examQuestions.length = questionsToGet;
         }
 
         // Final shuffle to mix questions from different files
         const finalQuestions = [...examQuestions].sort(() => 0.5 - Math.random());
 
-        console.log(`Exam ready with ${finalQuestions.length} questions from ${allFileQuestions.length} files`);
+        console.log(`Exam ready with ${finalQuestions.length} questions from ${allFileQuestions.length} files for role: ${userRole}`);
 
         return finalQuestions;
     } catch (error) {
