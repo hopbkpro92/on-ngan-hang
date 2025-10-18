@@ -7,94 +7,101 @@ import path from 'path';
 
 export async function loadQuizData(fileName: string): Promise<Question[]> {
     try {
-        // Server-side: read file directly from filesystem
+        let workbook: XLSX.WorkBook;
+
+        // Try filesystem first (works in local dev and some hosting), then fallback to fetch
         if (typeof window === 'undefined') {
-            // Normalize the filename to handle Unicode character variations (NFC form)
-            const normalizedFileName = fileName.normalize('NFC');
-            const filePath = path.join(process.cwd(), 'public', normalizedFileName);
-
-            // Try to read with normalized filename first
             try {
-                const fileBuffer = await fs.readFile(filePath);
-                const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+                // Local development: Try filesystem access first
+                const publicDir = path.join(process.cwd(), 'public');
+                const normalizedFileName = fileName.normalize('NFC');
+                let filePath = path.join(publicDir, normalizedFileName);
 
-                // Get visible sheets only
-                const visibleSheets = workbook.SheetNames.filter(name => {
-                    const sheetVisible = !(workbook.Workbook?.Sheets?.find(s => s.name === name)?.Hidden);
-                    return sheetVisible;
-                });
-
-                if (visibleSheets.length === 0) {
-                    throw new Error(`No visible sheets found in '${fileName}'.`);
-                }
-
-                console.log(`Processing file ${fileName}: Found ${workbook.SheetNames.length} total sheets, ${visibleSheets.length} visible`);
-
-                const worksheetName = visibleSheets[0];
-                const worksheet = workbook.Sheets[worksheetName];
-                if (!worksheet) {
-                    throw new Error(`Sheet '${worksheetName}' could not be read from '${fileName}'.`);
-                }
-
-                return parseWorksheet(worksheet, fileName);
-            } catch (readError: any) {
-                // If normalized version fails, try to find the file by listing directory
-                if (readError.code === 'ENOENT') {
-                    const publicDir = path.join(process.cwd(), 'public');
-                    const files = await fs.readdir(publicDir);
-
-                    // Find file with case-insensitive and normalization-insensitive match
-                    const matchingFile = files.find(file => {
-                        const normalizedFile = file.normalize('NFC');
-                        const normalizedSearch = fileName.normalize('NFC');
-                        return normalizedFile.toLowerCase() === normalizedSearch.toLowerCase() ||
-                            file.toLowerCase() === fileName.toLowerCase();
-                    });
-
-                    if (matchingFile) {
-                        console.log(`Found file with different normalization: "${matchingFile}" for requested "${fileName}"`);
-                        const actualFilePath = path.join(publicDir, matchingFile);
-                        const fileBuffer = await fs.readFile(actualFilePath);
-                        const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-
-                        // Get visible sheets only
-                        const visibleSheets = workbook.SheetNames.filter(name => {
-                            const sheetVisible = !(workbook.Workbook?.Sheets?.find(s => s.name === name)?.Hidden);
-                            return sheetVisible;
+                // Try to read the file
+                let fileBuffer: Buffer;
+                try {
+                    fileBuffer = await fs.readFile(filePath);
+                } catch (fsError: any) {
+                    if (fsError.code === 'ENOENT') {
+                        // Try to find file with different normalization
+                        const files = await fs.readdir(publicDir).catch(() => []);
+                        const matchingFile = files.find(file => {
+                            const normalizedFile = file.normalize('NFC');
+                            return normalizedFile.toLowerCase() === normalizedFileName.toLowerCase() ||
+                                file.toLowerCase() === fileName.toLowerCase();
                         });
 
-                        if (visibleSheets.length === 0) {
-                            throw new Error(`No visible sheets found in '${fileName}'.`);
+                        if (matchingFile) {
+                            console.log(`Found file with different normalization: "${matchingFile}"`);
+                            filePath = path.join(publicDir, matchingFile);
+                            fileBuffer = await fs.readFile(filePath);
+                        } else {
+                            throw fsError;
                         }
-
-                        console.log(`Processing file ${fileName}: Found ${workbook.SheetNames.length} total sheets, ${visibleSheets.length} visible`);
-
-                        const worksheetName = visibleSheets[0];
-                        const worksheet = workbook.Sheets[worksheetName];
-                        if (!worksheet) {
-                            throw new Error(`Sheet '${worksheetName}' could not be read from '${fileName}'.`);
-                        }
-
-                        return parseWorksheet(worksheet, fileName);
+                    } else {
+                        throw fsError;
                     }
                 }
-                throw readError;
+
+                workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+                console.log(`Loaded ${fileName} from filesystem`);
+            } catch (fsError) {
+                // Filesystem failed (likely Vercel), try fetch instead
+                console.log(`Filesystem access failed for ${fileName}, trying fetch...`);
+
+                // Build base URL
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
+
+                // Try different URL encodings
+                const urlVariants = [
+                    `${baseUrl}/${fileName}`,
+                    `${baseUrl}/${encodeURI(fileName)}`,
+                    `${baseUrl}/${encodeURIComponent(fileName)}`
+                ];
+
+                let arrayBuffer: ArrayBuffer | null = null;
+                let lastError: Error | null = null;
+
+                for (const url of urlVariants) {
+                    try {
+                        console.log(`Trying URL: ${url}`);
+                        const response = await fetch(url, {
+                            cache: 'no-store' // Disable caching for fresh data
+                        });
+                        if (response.ok) {
+                            arrayBuffer = await response.arrayBuffer();
+                            console.log(`Successfully fetched ${fileName} from ${url}`);
+                            break;
+                        } else {
+                            lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                    } catch (fetchError) {
+                        lastError = fetchError instanceof Error ? fetchError : new Error(String(fetchError));
+                        continue;
+                    }
+                }
+
+                if (!arrayBuffer) {
+                    throw new Error(`Failed to load ${fileName} via filesystem or fetch. Last error: ${lastError?.message}`);
+                }
+
+                if (arrayBuffer.byteLength === 0) {
+                    throw new Error(`File '${fileName}' is empty.`);
+                }
+
+                workbook = XLSX.read(arrayBuffer, { type: 'array' });
             }
+        } else {
+            // Client-side (should rarely happen with server actions)
+            const baseUrl = window.location.origin;
+            const response = await fetch(`${baseUrl}/${encodeURI(fileName)}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${fileName}: ${response.statusText}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            workbook = XLSX.read(arrayBuffer, { type: 'array' });
         }
-
-        // Client-side: fetch from public URL (should rarely happen with server actions)
-        const encodedFileName = encodeURIComponent(fileName);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/${encodedFileName}`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch ${fileName}: ${response.statusText} (status: ${response.status})`);
-        }
-
-        const arrayBuffer = await response.arrayBuffer();
-        if (arrayBuffer.byteLength === 0) {
-            throw new Error(`File '${fileName}' is empty.`);
-        }
-
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
         // Get visible sheets only
         const visibleSheets = workbook.SheetNames.filter(name => {
@@ -279,34 +286,52 @@ export async function listAvailableQuizFiles(userRole?: UserRole): Promise<QuizF
     };
 
     try {
-        if (!process.env.NEXT_PUBLIC_APP_URL) {
-            console.warn("NEXT_PUBLIC_APP_URL environment variable is not set");
-            return [];
+        // Build base URL with better Vercel detection
+        let baseUrl: string;
+
+        if (process.env.NEXT_PUBLIC_APP_URL) {
+            baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            console.log(`Using NEXT_PUBLIC_APP_URL: ${baseUrl}`);
+        } else if (process.env.VERCEL_URL) {
+            baseUrl = `https://${process.env.VERCEL_URL}`;
+            console.log(`Using VERCEL_URL: ${baseUrl}`);
+        } else {
+            baseUrl = 'http://localhost:9002';
+            console.log(`Using default localhost: ${baseUrl}`);
         }
 
-        const quizFilesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/quiz-files.json`;
+        const quizFilesUrl = `${baseUrl}/quiz-files.json`;
         console.log(`Fetching quiz files from: ${quizFilesUrl}`);
 
         // Use retry mechanism
         const response = await fetchWithRetry(quizFilesUrl, maxRetries);
 
+        console.log(`Response status: ${response.status}`);
+
         const fileList = await response.json();
+        console.log(`Received file list with ${Array.isArray(fileList) ? fileList.length : 0} items`);
 
         if (!Array.isArray(fileList)) {
-            console.error("Invalid quiz file list format: expected an array");
+            console.error("Invalid quiz file list format: expected an array, got:", typeof fileList);
             return [];
         }
 
         // Validate the new structure
         const validFiles: QuizFileMetadata[] = fileList.filter(item => {
-            return (
+            const isValid = (
                 typeof item === 'object' &&
                 typeof item.path === 'string' &&
                 typeof item.role === 'string' &&
                 typeof item.examQuestions === 'number' &&
                 (item.path.endsWith('.xlsx') || item.path.endsWith('.xls'))
             );
+            if (!isValid) {
+                console.warn('Invalid file metadata:', item);
+            }
+            return isValid;
         });
+
+        console.log(`Found ${validFiles.length} valid quiz files after validation`);
 
         if (validFiles.length === 0) {
             console.warn("No valid quiz files found in quiz-files.json");
@@ -320,12 +345,18 @@ export async function listAvailableQuizFiles(userRole?: UserRole): Promise<QuizF
                 file.role === userRole || file.role === "Kiến thức chung"
             );
             console.log(`Filtered to ${filteredFiles.length} files for role: ${userRole} (including common knowledge)`);
+        } else {
+            console.log(`No role filter applied, returning all ${validFiles.length} files`);
         }
 
-        console.log(`Successfully loaded ${filteredFiles.length} quiz files`);
         return filteredFiles;
     } catch (error) {
         console.error("Failed to list available quiz files:", error);
+        console.error("Error details:", {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+        });
         return [];
     }
 }
