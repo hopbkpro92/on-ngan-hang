@@ -337,6 +337,7 @@ export default function Home() {
                         questions={currentQuizQuestions}
                         onQuizComplete={handleQuizComplete}
                         quizMode={quizMode}
+                        onExit={handleRetakeQuiz}
                     />
                 )}
                 {quizState === "results" && currentQuizQuestions.length > 0 && (

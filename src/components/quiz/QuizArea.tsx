@@ -6,16 +6,28 @@ import type { QuizMode } from "@/app/page";
 import QuestionDisplayCard from "./QuestionDisplayCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, ChevronLeft, CheckSquare, Clock } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckSquare, Clock, LogOut } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface QuizAreaProps {
   questions: Question[];
   onQuizComplete: (answers: (number | null)[]) => void;
   quizMode: QuizMode;
+  onExit?: () => void;
 }
 
-export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAreaProps) {
+export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }: QuizAreaProps) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
         () => Array(questions.length).fill(null) // Initialize based on initial questions length
@@ -24,6 +36,15 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
     const [timeRemaining, setTimeRemaining] = useState<number>(120 * 60); // 120 minutes in seconds
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const autoSubmitRef = useRef<boolean>(false);
+
+    const handleExit = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+        if (onExit) {
+            onExit();
+        }
+    };
 
     // Effect to reset selectedAnswers when the questions array itself changes (e.g., new quiz started)
     useEffect(() => {
@@ -126,7 +147,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
         <div className="w-full space-y-6 mx-auto">
             {quizMode === "exam" && (
                 <Alert className="border-2">
-                    <Clock className="h-2 w-4" />
+                    <Clock className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between">
                         <span className="font-medium">Time Remaining:</span>
                         <span className={`text-2xl font-bold tabular-nums ${getTimerColor()}`}>
@@ -148,9 +169,42 @@ export default function QuizArea({ questions, onQuizComplete, quizMode }: QuizAr
                 />
             </div>
 
-            <div className="flex justify-between items-center pt-3">
-                <div className="text-xs md:text-sm text-muted-foreground">
-                    Answered: {selectedAnswers.filter(ans => ans !== null).length} / {questions.length}
+            <div className="flex justify-between items-center pt-3 gap-3">
+                <div className="flex items-center gap-3">
+                    {onExit && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="default" 
+                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                >
+                                    <LogOut className="h-4 w-4 mr-2" />
+                                    Exit Quiz
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Exit Quiz?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Your progress will be lost and you'll return to the quiz setup page. Are you sure you want to exit?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                        onClick={handleExit}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                        Yes, Exit
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    <div className="text-xs md:text-sm text-muted-foreground">
+                        Answered: {selectedAnswers.filter(ans => ans !== null).length} / {questions.length}
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     {(quizMode === "testing" || quizMode === "exam") && currentQuestionIndex > 0 && (
