@@ -46,56 +46,44 @@ export async function loadQuizData(fileName: string): Promise<Question[]> {
                 workbook = XLSX.read(fileBuffer, { type: 'buffer' });
                 console.log(`Loaded ${fileName} from filesystem`);
             } catch (fsError) {
-                // Filesystem failed (likely Vercel), try fetch instead
-                console.log(`Filesystem access failed for ${fileName}, trying fetch...`);
+                // Filesystem failed (likely Vercel), try API route instead
+                console.log(`Filesystem access failed for ${fileName}, trying API route...`);
 
                 // Build base URL
                 const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:9002');
 
-                // Try different URL encodings
-                const urlVariants = [
-                    `${baseUrl}/${fileName}`,
-                    `${baseUrl}/${encodeURI(fileName)}`,
-                    `${baseUrl}/${encodeURIComponent(fileName)}`
-                ];
+                // Use API route to serve the file (handles Vietnamese filenames properly)
+                const apiUrl = `${baseUrl}/api/quiz-file?file=${encodeURIComponent(fileName)}`;
 
-                let arrayBuffer: ArrayBuffer | null = null;
-                let lastError: Error | null = null;
+                try {
+                    console.log(`Fetching from API: ${apiUrl}`);
+                    const response = await fetch(apiUrl, {
+                        cache: 'no-store' // Disable caching for fresh data
+                    });
 
-                for (const url of urlVariants) {
-                    try {
-                        console.log(`Trying URL: ${url}`);
-                        const response = await fetch(url, {
-                            cache: 'no-store' // Disable caching for fresh data
-                        });
-                        if (response.ok) {
-                            arrayBuffer = await response.arrayBuffer();
-                            console.log(`Successfully fetched ${fileName} from ${url}`);
-                            break;
-                        } else {
-                            lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        }
-                    } catch (fetchError) {
-                        lastError = fetchError instanceof Error ? fetchError : new Error(String(fetchError));
-                        continue;
+                    if (!response.ok) {
+                        throw new Error(`API returned ${response.status}: ${response.statusText}`);
                     }
-                }
 
-                if (!arrayBuffer) {
-                    throw new Error(`Failed to load ${fileName} via filesystem or fetch. Last error: ${lastError?.message}`);
-                }
+                    const arrayBuffer = await response.arrayBuffer();
+                    console.log(`Successfully fetched ${fileName} from API route`);
 
-                if (arrayBuffer.byteLength === 0) {
-                    throw new Error(`File '${fileName}' is empty.`);
-                }
+                    if (arrayBuffer.byteLength === 0) {
+                        throw new Error(`File '${fileName}' is empty.`);
+                    }
 
-                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                } catch (apiError) {
+                    const errorMsg = apiError instanceof Error ? apiError.message : String(apiError);
+                    throw new Error(`Failed to load ${fileName} via filesystem or API. Last error: ${errorMsg}`);
+                }
             }
         } else {
             // Client-side (should rarely happen with server actions)
             const baseUrl = window.location.origin;
-            const response = await fetch(`${baseUrl}/${encodeURI(fileName)}`);
+            const apiUrl = `${baseUrl}/api/quiz-file?file=${encodeURIComponent(fileName)}`;
+            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${fileName}: ${response.statusText}`);
             }

@@ -1,13 +1,21 @@
 # Vercel Deployment Guide
 
-## Important: Environment Variables Setup
+## ✅ New Solution: API Route for File Serving
+
+The app now uses a custom API route (`/api/quiz-file`) to serve Excel files, which solves the Vietnamese filename issue in Vercel!
+
+### How It Works
+
+1. **Local Development**: Files are read directly from the filesystem (fast)
+2. **Vercel Production**: Files are served via API route at `/api/quiz-file?file=filename.xlsx`
+3. **Automatic**: The app automatically detects which method to use
+
+## Environment Variables Setup (Optional but Recommended)
 
 ### For Vercel Production
 
-**⚠️ CRITICAL: You MUST set this environment variable in Vercel**
-
 1. Go to your Vercel project dashboard
-2. Navigate to **Settings** → **Environment Variables**
+2. Navigate to **Settings** → **Environment Variables**  
 3. Add the following variable:
    - **Name**: `NEXT_PUBLIC_APP_URL`
    - **Value**: `https://on-ngan-hang.vercel.app` (your actual Vercel deployment URL)
@@ -15,9 +23,9 @@
 4. **Click "Save"**
 5. **Redeploy your application** (Vercel → Deployments → click "..." → Redeploy)
 
-### Alternative: The app will auto-detect VERCEL_URL
+### Alternative: Auto-Detection
 
-If you don't set `NEXT_PUBLIC_APP_URL`, the app will automatically use Vercel's built-in `VERCEL_URL` environment variable. However, setting `NEXT_PUBLIC_APP_URL` is recommended for better control.
+If you don't set `NEXT_PUBLIC_APP_URL`, the app will automatically use Vercel's built-in `VERCEL_URL` environment variable.
 
 ### For Local Development
 
