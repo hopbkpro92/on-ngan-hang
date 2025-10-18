@@ -89,23 +89,23 @@ export default function QuizSetup({
     const isSetupDisabled = !hasFilesAvailable || isLoading || (selectedMode !== "exam" && (!hasLoadedQuestions || maxQuestions === 0));
     const isButtonDisabled = isSetupDisabled || parseInt(numQuestions) <= 0 || isNaN(parseInt(numQuestions));
 
-    let descriptionText = "Choose your mode and number of questions to test your knowledge.";
-    if (!hasFilesAvailable) {
-        descriptionText = "No quiz files found. Please add Excel files to the public folder.";
-    } else if (isLoading) {
-        descriptionText = "Loading questions from the selected file...";
-    } else if (selectedMode !== "exam" && !hasLoadedQuestions && hasFilesAvailable) {
-        descriptionText = "No questions found in the selected file. Please check the file or select another.";
-    }
+    // let descriptionText = "Choose your mode and number of questions to test your knowledge.";
+    // if (!hasFilesAvailable) {
+    //     descriptionText = "No quiz files found. Please add Excel files to the public folder.";
+    // } else if (isLoading) {
+    //     descriptionText = "Loading questions from the selected file...";
+    // } else if (selectedMode !== "exam" && !hasLoadedQuestions && hasFilesAvailable) {
+    //     descriptionText = "No questions found in the selected file. Please check the file or select another.";
+    // }
 
     return (
         <Card className={`w-full shadow-xl ${isLoading ? 'opacity-70' : ''} mx-auto`}>
-            <CardHeader className="p-3 md:p-4">
+            {/* <CardHeader className="p-3 md:p-4">
                 <CardTitle className="text-2xl md:text-3xl font-bold text-center">Quiz Whiz Challenge!</CardTitle>
                 <CardDescription className="text-center text-muted-foreground min-h-[1.5em] md:min-h-[2em] text-sm md:text-base">
                     {descriptionText}
                 </CardDescription>
-            </CardHeader>
+            </CardHeader> */}
             <CardContent className="space-y-4 p-3 md:p-4">
                 <div className="space-y-1">
                     <Label htmlFor="numQuestions" className="text-md md:text-lg font-medium">Number of Questions:</Label>
@@ -159,11 +159,6 @@ export default function QuizSetup({
                             </Label>
                         </div>
                     </RadioGroup>
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                        Testing: Answers revealed at the end.<br />
-                        Learning: Immediate feedback per question.<br />
-                        Exam: Questions from role-specific and common knowledge files.
-                    </p>
                 </div>
             </CardContent>
             <CardFooter className="p-3 md:p-4 justify-center">
