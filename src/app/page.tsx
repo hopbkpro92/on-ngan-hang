@@ -149,6 +149,15 @@ export default function Home() {
         // quizMode remains as previously selected
     }, []);
 
+    // Exit handler: when leaving an active quiz (especially exam mode),
+    // return to setup and switch to a non-exam mode so the file selector is available again.
+    const handleExitQuiz = useCallback(() => {
+        setQuizState("setup");
+        setCurrentQuizQuestions([]);
+        setUserAnswers([]);
+        setQuizMode("testing");
+    }, []);
+
     const handleFileChange = (value: string) => {
         const file = availableFiles.find(f => f.path === value);
         if (file) {
@@ -337,7 +346,7 @@ export default function Home() {
                         questions={currentQuizQuestions}
                         onQuizComplete={handleQuizComplete}
                         quizMode={quizMode}
-                        onExit={handleRetakeQuiz}
+                        onExit={handleExitQuiz}
                     />
                 )}
                 {quizState === "results" && currentQuizQuestions.length > 0 && (
