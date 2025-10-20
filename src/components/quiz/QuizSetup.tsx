@@ -87,6 +87,7 @@ export default function QuizSetup({
     };
 
     const isSetupDisabled = !hasFilesAvailable || isLoading || (selectedMode !== "exam" && (!hasLoadedQuestions || maxQuestions === 0));
+    const isExamMode = selectedMode === "exam";
     const isButtonDisabled = isSetupDisabled || parseInt(numQuestions) <= 0 || isNaN(parseInt(numQuestions));
 
     // let descriptionText = "Choose your mode and number of questions to test your knowledge.";
@@ -118,7 +119,7 @@ export default function QuizSetup({
                         max={selectedMode === "exam" ? undefined : (maxQuestions > 0 ? maxQuestions : undefined)}
                         className="text-sm md:text-base bg-card border-primary/50 focus:border-primary focus:ring-primary"
                         data-ai-hint="number input"
-                        disabled={isSetupDisabled}
+                        disabled={isSetupDisabled || isExamMode}
                     />
                     <p className="text-xs md:text-sm text-muted-foreground">
                         {selectedMode === "exam"
@@ -132,6 +133,7 @@ export default function QuizSetup({
                                         : "(No quiz files available)"}
                     </p>
                 </div>
+                {/* TODO: If you have a quiz file selector, add disabled={isExamMode} to its props here. */}
                 <div className="space-y-2">
                     <Label className="text-md md:text-lg font-medium">Select Mode:</Label>
                     <RadioGroup
