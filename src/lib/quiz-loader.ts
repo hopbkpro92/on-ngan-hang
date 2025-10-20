@@ -351,7 +351,7 @@ export async function listAvailableQuizFiles(userRole?: UserRole): Promise<QuizF
 
 /**
  * Load questions from quiz files based on user role with specified question counts
- * @param userRole - The user's role (Kế toán, Kiểm ngân, or Quản lý)
+ * @param userRole - The user's role (Kế toán, Kiểm ngân, Tín dụng or Quản lý)
  * @param totalQuestions - Total number of questions to load (default: 100)
  * @returns Array of questions distributed according to examQuestions specification
  */

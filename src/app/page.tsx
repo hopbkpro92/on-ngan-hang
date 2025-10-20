@@ -237,6 +237,9 @@ export default function Home() {
                                         <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
                                             Kiểm ngân
                                         </SelectItem>
+                                        <SelectItem value="Tín dụng" className="text-sm md:text-base">
+                                            Tín dụng
+                                        </SelectItem>
                                         <SelectItem value="Quản lý" className="text-sm md:text-base">
                                             Quản lý
                                         </SelectItem>
@@ -292,6 +295,9 @@ export default function Home() {
                                         </SelectItem>
                                         <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
                                             Kiểm ngân
+                                        </SelectItem>
+                                        <SelectItem value="Tín dụng" className="text-sm md:text-base">
+                                            Tín dụng
                                         </SelectItem>
                                         <SelectItem value="Quản lý" className="text-sm md:text-base">
                                             Quản lý

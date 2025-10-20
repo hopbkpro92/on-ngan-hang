@@ -11,5 +11,5 @@ export interface QuizFileMetadata {
     examQuestions: number;
 }
 
-export type UserRole = "Kế toán" | "Kiểm ngân" | "Quản lý";
+export type UserRole = "Kế toán" | "Kiểm ngân" | "Tín dụng" | "Quản lý";
 

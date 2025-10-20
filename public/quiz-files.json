@@ -38,5 +38,15 @@
         "path": "17. Tiêu chuẩn tác phong GDV.xlsx",
         "role": "Kiến thức chung",
         "examQuestions": 3
+    },
+    {
+        "path": "3. Tín dụng khách hàng cá nhân-P1.xlsx",
+        "role": "Tín dụng",
+        "examQuestions": 38
+    },
+    {
+        "path": "3. Tín dụng khách hàng cá nhân-P2.xlsx",
+        "role": "Tín dụng",
+        "examQuestions": 37
     }
 ]
