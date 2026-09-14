@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { getTranslations, type Language } from "@/lib/i18n";
 
 interface QuizSetupProps {
     onStartQuiz: (numQuestions: number, mode: QuizMode) => void;
@@ -15,6 +16,7 @@ interface QuizSetupProps {
     hasLoadedQuestions?: boolean;
     hasFilesAvailable?: boolean;
     initialMode: QuizMode;
+    language: Language;
 }
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Rocket, Loader2, GraduationCap, CheckSquareIcon } from "lucide-react";
@@ -24,11 +26,13 @@ export default function QuizSetup({
     isLoading = false,
     hasLoadedQuestions = false,
     hasFilesAvailable = false,
-    initialMode
+    initialMode,
+    language
 }: QuizSetupProps) {
     const [numQuestions, setNumQuestions] = useState<string>("");
     const [selectedMode, setSelectedMode] = useState<QuizMode>(initialMode);
     const { toast } = useToast();
+    const t = getTranslations(language);
 
     useEffect(() => {
         if (selectedMode === "exam") {
@@ -44,8 +48,8 @@ export default function QuizSetup({
     const handleStart = () => {
         if (!hasFilesAvailable) {
             toast({
-                title: "No Quiz Files Available",
-                description: "Please add Excel files to the 'public' folder and refresh.",
+                title: t.noQuizFilesAvailable,
+                description: t.addExcelAndRefresh,
                 variant: "destructive",
             });
             return;
@@ -55,8 +59,8 @@ export default function QuizSetup({
         if (selectedMode !== "exam") {
             if (!hasLoadedQuestions || maxQuestions === 0) {
                 toast({
-                    title: "No Questions Loaded",
-                    description: "The selected file might be empty or incorrectly formatted. Try another file.",
+                    title: t.noQuestionsLoaded,
+                    description: t.checkSelectedFile,
                     variant: "destructive",
                 });
                 return;
@@ -66,8 +70,8 @@ export default function QuizSetup({
         const num = parseInt(numQuestions, 10);
         if (isNaN(num) || num <= 0) {
             toast({
-                title: "Invalid Number",
-                description: "Please enter a valid number of questions greater than 0.",
+                title: t.invalidNumber,
+                description: t.enterPositiveNumber,
                 variant: "destructive",
             });
             return;
@@ -76,8 +80,8 @@ export default function QuizSetup({
         // For exam mode, allow custom number but suggest 100
         if (selectedMode !== "exam" && num > maxQuestions) {
             toast({
-                title: "Too Many Questions",
-                description: `Please enter a number less than or equal to ${maxQuestions}.`,
+                title: t.tooManyQuestions,
+                description: `${t.enterAtMost} ${maxQuestions}.`,
                 variant: "destructive",
             });
             return;
@@ -109,7 +113,7 @@ export default function QuizSetup({
             </CardHeader> */}
             <CardContent className="space-y-6 p-4 sm:p-6">
                 <div className="space-y-2">
-                    <Label htmlFor="numQuestions" className="text-base font-semibold sm:text-lg">Number of questions</Label>
+                    <Label htmlFor="numQuestions" className="text-base font-semibold sm:text-lg">{t.numberOfQuestions}</Label>
                     <Input
                         id="numQuestions"
                         type="number"
@@ -123,19 +127,19 @@ export default function QuizSetup({
                     />
                     <p className="text-sm text-muted-foreground">
                         {selectedMode === "exam"
-                            ? "(Recommended: 100 questions from all files)"
+                            ? `(${t.recommended})`
                             : hasFilesAvailable && hasLoadedQuestions && maxQuestions > 0
                                 ? `(Max: ${maxQuestions})`
                                 : hasFilesAvailable && isLoading
-                                    ? "(Loading questions...)"
+                                    ? `(${t.loadingQuestionsHint})`
                                     : hasFilesAvailable && !hasLoadedQuestions
-                                        ? "(No questions in selected file)"
-                                        : "(No quiz files available)"}
+                                        ? `(${t.noQuestionsInFile})`
+                                        : `(${t.noQuizFilesHint})`}
                     </p>
                 </div>
                 {/* TODO: If you have a quiz file selector, add disabled={isExamMode} to its props here. */}
                 <div className="space-y-3">
-                    <Label className="text-base font-semibold sm:text-lg">Select mode</Label>
+                    <Label className="text-base font-semibold sm:text-lg">{t.selectMode}</Label>
                     <RadioGroup
                         value={selectedMode}
                         onValueChange={(value: string) => setSelectedMode(value as QuizMode)}
@@ -145,19 +149,19 @@ export default function QuizSetup({
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="testing" id="mode-testing" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
-                                <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> Testing Mode
+                                <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> {t.testingMode}
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="learning" id="mode-learning" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
-                                <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> Learning Mode
+                                <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> {t.learningMode}
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="exam" id="mode-exam" disabled={!hasFilesAvailable} />
                             <Label htmlFor="mode-exam" className={`flex items-center cursor-pointer text-sm md:text-base ${!hasFilesAvailable ? 'cursor-not-allowed' : ''}`}>
-                                <Rocket className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-green-500" /> Exam Mode
+                                <Rocket className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-green-500" /> {t.examModeShort}
                             </Label>
                         </div>
                     </RadioGroup>
@@ -174,7 +178,7 @@ export default function QuizSetup({
                     ) : (
                         <Rocket className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                     )}
-                    {isLoading ? "Loading..." : "Start Quiz"}
+                    {isLoading ? t.loadingShort : t.startQuiz}
                 </Button>
             </CardFooter>
         </Card>

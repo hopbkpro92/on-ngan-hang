@@ -6,15 +6,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, RefreshCw, Award, GraduationCap } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { getTranslations, type Language } from "@/lib/i18n";
 
 interface QuizResultsProps {
   questions: Question[];
   userAnswers: (number | null)[];
   onRetakeQuiz: () => void;
   quizMode: QuizMode;
+  language: Language;
 }
 
-export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quizMode }: QuizResultsProps) {
+export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quizMode, language }: QuizResultsProps) {
+  const t = getTranslations(language);
   let correctCount = 0;
   userAnswers.forEach((answer, index) => {
     if (answer !== null && answer === questions[index].correctAnswerIndex) {
@@ -24,7 +27,7 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
   const wrongCount = questions.length - correctCount;
   const scorePercentage = Math.round((correctCount / questions.length) * 100);
 
-  const titleText = quizMode === "learning" ? "Learning Session Complete!" : "Quiz Completed!";
+  const titleText = quizMode === "learning" ? t.resultsLearning : t.resultsQuiz;
   const Icon = quizMode === "learning" ? GraduationCap : Award;
 
   return (
@@ -33,20 +36,20 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
         <CardTitle className="text-2xl font-bold sm:text-3xl">{titleText}</CardTitle>
         <Icon className="mx-auto my-4 h-14 w-14 text-primary sm:h-16 sm:w-16" />
         <CardDescription className="text-base sm:text-xl">
-          You scored {correctCount} out of {questions.length} ({scorePercentage}%)
+          {t.scored} {correctCount} {t.of} {questions.length} ({scorePercentage}%)
         </CardDescription>
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-2">
           <span className="flex items-center text-base font-semibold text-correct-answer sm:text-lg">
-            <CheckCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> Correct: {correctCount}
+            <CheckCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> {t.correct}: {correctCount}
           </span>
           <span className="flex items-center text-base font-semibold text-incorrect-answer sm:text-lg">
-            <XCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> Wrong: {wrongCount}
+            <XCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> {t.wrong}: {wrongCount}
           </span>
         </div>
       </CardHeader>
       <CardContent className="p-4 sm:p-6">
         <h3 className="mb-4 text-center text-lg font-semibold text-card-foreground sm:text-xl">
-          {quizMode === 'learning' ? 'Review Questions & Answers:' : 'Review Your Answers:'}
+          {quizMode === 'learning' ? t.reviewLearning : t.reviewAnswers}
         </h3>
         <Accordion type="single" collapsible className="w-full">
           {questions.map((question, index) => {
@@ -79,18 +82,18 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
                       >
                         {option}
                         {optionIndex === userAnswer && !isCorrect && (
-                          <span className="ml-2 text-xs font-normal">(Your answer)</span>
+                          <span className="ml-2 text-xs font-normal">({t.yourAnswer})</span>
                         )}
                         {optionIndex === question.correctAnswerIndex && userAnswer !== null && optionIndex !== userAnswer && (
-                           <span className="ml-2 text-xs font-normal">(Correct answer)</span>
+                           <span className="ml-2 text-xs font-normal">({t.correctAnswerLabel})</span>
                         )}
                          {optionIndex === question.correctAnswerIndex && userAnswer === null && (
-                           <span className="ml-2 text-xs font-normal">(Correct answer - Not answered)</span>
+                           <span className="ml-2 text-xs font-normal">({t.correctNotAnswered})</span>
                         )}
                       </li>
                     ))}
                   </ul>
-                  {userAnswer === null && <p className="mt-1.5 md:mt-2 text-xs md:text-sm text-muted-foreground">You did not answer this question.</p>}
+                  {userAnswer === null && <p className="mt-1.5 text-xs text-muted-foreground md:mt-2 md:text-sm">{t.notAnswered}</p>}
                 </AccordionContent>
               </AccordionItem>
             );
@@ -100,7 +103,7 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
       <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
         <Button onClick={onRetakeQuiz} className="h-11 w-full text-base sm:w-auto sm:px-8">
           <RefreshCw className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-          {quizMode === "learning" ? "New Learning Session" : "Retake Quiz"}
+          {quizMode === "learning" ? t.newLearning : t.retake}
         </Button>
       </CardFooter>
     </Card>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, XCircle } from "lucide-react";
+import { getTranslations, type Language } from "@/lib/i18n";
 
 interface QuestionDisplayCardProps {
   question: Question;
@@ -14,6 +15,7 @@ interface QuestionDisplayCardProps {
   questionNumber: number;
   totalQuestions: number;
   quizMode: QuizMode;
+  language: Language;
 }
 
 export default function QuestionDisplayCard({
@@ -23,7 +25,9 @@ export default function QuestionDisplayCard({
   questionNumber,
   totalQuestions,
   quizMode,
+  language,
 }: QuestionDisplayCardProps) {
+  const t = getTranslations(language);
   const hasBeenAnswered = selectedOption !== null;
   const isRadioGroupDisabled = quizMode === 'learning' && hasBeenAnswered;
 
@@ -31,7 +35,7 @@ export default function QuestionDisplayCard({
     <Card className="w-full shadow-lg">
       <CardHeader className="space-y-3 p-4 sm:p-6">
         <CardTitle className="text-base font-semibold text-primary sm:text-lg">
-          Question {questionNumber} <span className="text-sm font-normal text-muted-foreground">of {totalQuestions}</span>
+          {t.question} {questionNumber} <span className="text-sm font-normal text-muted-foreground">{t.of} {totalQuestions}</span>
         </CardTitle>
         <CardDescription className="min-h-[2.5em] text-base leading-7 !text-card-foreground sm:text-lg">
           {question.question}
@@ -94,7 +98,7 @@ export default function QuestionDisplayCard({
         </RadioGroup>
          {quizMode === 'learning' && hasBeenAnswered && selectedOption !== question.correctAnswerIndex && (
           <p className="mt-3 p-2 rounded-md bg-correct-answer/20 text-correct-answer-foreground border border-correct-answer text-xs md:text-sm">
-            Correct answer: {question.options[question.correctAnswerIndex]}
+            {t.correctAnswer}: {question.options[question.correctAnswerIndex]}
           </p>
         )}
       </CardContent>

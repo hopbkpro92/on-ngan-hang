@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ChevronRight, ChevronLeft, CheckSquare, Clock, LogOut } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getTranslations, type Language } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,9 +26,11 @@ interface QuizAreaProps {
   onQuizComplete: (answers: (number | null)[]) => void;
   quizMode: QuizMode;
   onExit?: () => void;
+    language: Language;
 }
 
-export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }: QuizAreaProps) {
+export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, language }: QuizAreaProps) {
+        const t = getTranslations(language);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
         () => Array(questions.length).fill(null) // Initialize based on initial questions length
@@ -149,7 +152,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                 <Alert className="border-primary/20 bg-card shadow-sm">
                     <Clock className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-medium sm:text-base">Time remaining</span>
+                        <span className="text-sm font-medium sm:text-base">{t.timeRemaining}</span>
                         <span className={`text-xl font-bold tabular-nums sm:text-2xl ${getTimerColor()}`}>
                             {formatTime(timeRemaining)}
                         </span>
@@ -171,6 +174,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                     questionNumber={currentQuestionIndex + 1}
                     totalQuestions={questions.length}
                     quizMode={quizMode}
+                    language={language}
                 />
             </div>
 
@@ -185,30 +189,28 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                                     className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                                 >
                                     <LogOut className="h-4 w-4 mr-2" />
-                                    Exit Quiz
+                                    {t.exitQuiz}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Exit Quiz?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Your progress will be lost and you'll return to the quiz setup page. Are you sure you want to exit?
-                                    </AlertDialogDescription>
+                                    <AlertDialogTitle>{t.exitTitle}</AlertDialogTitle>
+                                    <AlertDialogDescription>{t.exitDescription}</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Continue Quiz</AlertDialogCancel>
+                                    <AlertDialogCancel>{t.continueQuiz}</AlertDialogCancel>
                                     <AlertDialogAction 
                                         onClick={handleExit}
                                         className="bg-destructive hover:bg-destructive/90"
                                     >
-                                        Yes, Exit
+                                        {t.yesExit}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
                     <div className="text-xs md:text-sm text-muted-foreground">
-                        Answered: {selectedAnswers.filter(ans => ans !== null).length} / {questions.length}
+                        {t.answered}: {selectedAnswers.filter(ans => ans !== null).length} / {questions.length}
                     </div>
                 </div>
                 <div className="flex w-full gap-2 sm:w-auto">
@@ -240,7 +242,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                             variant="outline"
                             className="flex-1 sm:flex-none"
                         >
-                            Submit <CheckSquare className="ml-2 h-4 w-4" />
+                            {t.submit} <CheckSquare className="ml-2 h-4 w-4" />
                         </Button>
                     )}
                 </div>
