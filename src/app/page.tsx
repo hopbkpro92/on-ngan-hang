@@ -7,11 +7,20 @@ import { loadQuizData, listAvailableQuizFiles, loadExamQuestions } from "@/lib/q
 import QuizSetup from "@/components/quiz/QuizSetup";
 import QuizArea from "@/components/quiz/QuizArea";
 import QuizResults from "@/components/quiz/QuizResults";
-import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users, Sun, Moon } from "lucide-react";
+import ProgressPanel from "@/components/quiz/ProgressPanel";
+import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users, Sun, Moon, BarChart3 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+    createInitialProgress,
+    loadQuizProgress,
+    recordQuizResult,
+    saveQuizProgress,
+    type QuizProgress,
+} from "@/lib/quiz-progress";
 
 type QuizState = "setup" | "active" | "results";
 type Theme = "light" | "dark";
@@ -33,6 +42,7 @@ export default function Home() {
     const [userRole, setUserRole] = useState<UserRole>("Kế toán");
     const [language, setLanguage] = useState<Language>("vi");
     const [theme, setTheme] = useState<Theme>("light");
+    const [progress, setProgress] = useState<QuizProgress>(createInitialProgress);
     const t = getTranslations(language);
 
     useEffect(() => {
@@ -45,6 +55,7 @@ export default function Home() {
         if (savedTheme === "light" || savedTheme === "dark") {
             setTheme(savedTheme);
         }
+        setProgress(loadQuizProgress());
 
         const initializeQuizData = async () => {
             setIsLoading(true);
@@ -166,9 +177,22 @@ export default function Home() {
     }, [allLoadedQuestions, userRole]);
 
     const handleQuizComplete = useCallback((answers: (number | null)[]) => {
+        const correctAnswers = answers.reduce<number>((count, answer, index) => (
+            answer !== null && answer === currentQuizQuestions[index].correctAnswerIndex
+                ? count + 1
+                : count
+        ), 0);
+        const today = new Date().toISOString().slice(0, 10);
+        const nextProgress = recordQuizResult(
+            progress,
+            { totalQuestions: currentQuizQuestions.length, correctAnswers },
+            today,
+        );
+        setProgress(nextProgress);
+        saveQuizProgress(nextProgress);
         setUserAnswers(answers);
         setQuizState("results");
-    }, []);
+    }, [currentQuizQuestions, progress]);
 
     const handleRetakeQuiz = useCallback(() => {
         setQuizState("setup");
@@ -271,6 +295,20 @@ export default function Home() {
                         {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
                         <span className="hidden sm:inline">{theme === "light" ? t.darkMode : t.lightMode}</span>
                     </Button>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button type="button" variant="outline" size="sm" className="bg-card/80">
+                                <BarChart3 className="mr-2 h-4 w-4" />
+                                <span>{t.progressTitle}</span>
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>{t.progressTitle}</DialogTitle>
+                            </DialogHeader>
+                            <ProgressPanel progress={progress} language={language} />
+                        </DialogContent>
+                    </Dialog>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground sm:text-base">{t.tagline}</p>
             </header>

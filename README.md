@@ -27,6 +27,12 @@ npm run genkit:dev # Start Genkit dev server (AI flows)
 
 Four role-based question banks: **Kế toán**, **Kiểm ngân**, **Tín dụng**, **Quản lý**. Questions tagged `"Kiến thức chung"` (common knowledge) appear for all roles.
 
+## Local Progress
+
+XP, level, study streak, daily goal progress, and accuracy statistics are
+stored in the browser's `localStorage`. No login, database, or separate server
+is required. Progress is specific to the current browser and device.
+
 ## Quiz File Format
 
 Add Excel `.xlsx` files to the `public/` folder. Each file must have one sheet with these columns:
