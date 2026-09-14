@@ -29,19 +29,19 @@ export default function QuestionDisplayCard({
 
   return (
     <Card className="w-full shadow-lg">
-      <CardHeader className="p-3 md:p-4">
-        <CardTitle className="text-lg md:text-xl font-semibold">
-          Question {questionNumber} <span className="text-xs md:text-sm text-muted-foreground">of {totalQuestions}</span>
+      <CardHeader className="space-y-3 p-4 sm:p-6">
+        <CardTitle className="text-base font-semibold text-primary sm:text-lg">
+          Question {questionNumber} <span className="text-sm font-normal text-muted-foreground">of {totalQuestions}</span>
         </CardTitle>
-        <CardDescription className="text-md md:text-lg pt-1 md:pt-2 !text-card-foreground min-h-[2.5em] md:min-h-[3em]">
+        <CardDescription className="min-h-[2.5em] text-base leading-7 !text-card-foreground sm:text-lg">
           {question.question}
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-3 md:p-4">
+      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
         <RadioGroup
           value={selectedOption !== null ? selectedOption.toString() : undefined}
           onValueChange={(value) => onOptionSelect(parseInt(value))}
-          className="space-y-2 md:space-y-3"
+          className="space-y-3"
           disabled={isRadioGroupDisabled}
         >
           {question.options.map((option, index) => {
@@ -72,7 +72,7 @@ export default function QuestionDisplayCard({
               <Label
                 key={index}
                 htmlFor={`option-${question.id}-${index}`}
-                className={`flex items-center space-x-2 md:space-x-3 p-2.5 md:p-3 rounded-md border cursor-pointer transition-all duration-200 ease-in-out
+                className={`flex min-h-14 items-center space-x-3 rounded-md border p-3.5 cursor-pointer transition-all duration-200 ease-in-out
                   ${optionStyle}
                   ${isRadioGroupDisabled ? 'cursor-not-allowed opacity-80' : ''}
                 `}
@@ -87,7 +87,7 @@ export default function QuestionDisplayCard({
                   disabled={isRadioGroupDisabled}
                 />
                 {quizMode === 'learning' && hasBeenAnswered && icon}
-                <span className="text-sm md:text-base flex-grow">{option}</span>
+                <span className="flex-grow text-sm leading-6 sm:text-base">{option}</span>
               </Label>
             );
           })}

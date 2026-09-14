@@ -144,19 +144,24 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
     const currentSelectedOption = selectedAnswers[currentQuestionIndex];
 
     return (
-        <div className="w-full space-y-6 mx-auto">
+        <div className="mx-auto w-full space-y-5">
             {quizMode === "exam" && (
-                <Alert className="border-2">
+                <Alert className="border-primary/20 bg-card shadow-sm">
                     <Clock className="h-4 w-4" />
-                    <AlertDescription className="flex items-center justify-between">
-                        <span className="font-medium">Time Remaining:</span>
-                        <span className={`text-2xl font-bold tabular-nums ${getTimerColor()}`}>
+                    <AlertDescription className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium sm:text-base">Time remaining</span>
+                        <span className={`text-xl font-bold tabular-nums sm:text-2xl ${getTimerColor()}`}>
                             {formatTime(timeRemaining)}
                         </span>
                     </AlertDescription>
                 </Alert>
             )}
-            <Progress value={progressValue} className="w-full h-2 mb-1" />
+            <div className="flex items-center gap-3">
+                <Progress value={progressValue} className="h-2 flex-1" />
+                <span className="shrink-0 text-xs font-medium text-muted-foreground sm:text-sm">
+                    {currentQuestionIndex + 1}/{questions.length}
+                </span>
+            </div>
             <div className={showNext ? 'animate-fadeIn' : 'opacity-0'}>
                 <QuestionDisplayCard
                     key={`${currentQuestion.id}-${quizMode}-${currentQuestionIndex}`}
@@ -169,8 +174,8 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                 />
             </div>
 
-            <div className="flex justify-between items-center pt-3 gap-3">
-                <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-4 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between gap-3 sm:justify-start">
                     {onExit && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -206,12 +211,13 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                         Answered: {selectedAnswers.filter(ans => ans !== null).length} / {questions.length}
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex w-full gap-2 sm:w-auto">
                     {(quizMode === "testing" || quizMode === "exam") && currentQuestionIndex > 0 && (
                         <Button
                             onClick={handlePreviousQuestion}
                             size="default"
                             variant="outline"
+                            className="flex-1 sm:flex-none"
                         >
                             <ChevronLeft className="h-6 w-6" strokeWidth={3} />
                         </Button>
@@ -222,6 +228,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                             disabled={currentSelectedOption === null}
                             size="default"
                             variant="outline"
+                            className="flex-1 sm:flex-none"
                         >
                             <ChevronRight className="h-6 w-6" strokeWidth={3} />
                         </Button>
@@ -231,6 +238,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit }
                             disabled={selectedAnswers.some(ans => ans === null)}
                             size="default"
                             variant="outline"
+                            className="flex-1 sm:flex-none"
                         >
                             Submit <CheckSquare className="ml-2 h-4 w-4" />
                         </Button>

@@ -182,7 +182,7 @@ export default function Home() {
 
     if (showGlobalLoader) {
         return (
-            <main className="flex min-h-screen flex-col items-center justify-center p-2 bg-background text-foreground">
+            <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8 text-foreground sm:px-6">
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
                 <p className="text-xl font-semibold">Loading Quiz Whiz...</p>
                 {(!selectedFile && availableFiles.length === 0) && <p className="text-sm text-muted-foreground mt-2">Searching for quiz files...</p>}
@@ -193,7 +193,7 @@ export default function Home() {
 
     if (error && availableFiles.length === 0) {
         return (
-            <main className="flex min-h-screen flex-col items-center justify-center p-2 bg-background text-foreground text-center">
+            <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8 text-center text-foreground sm:px-6">
                 <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
                 <h1 className="text-2xl font-bold text-destructive mb-2">Oops! Something went wrong.</h1>
                 <p className="text-lg mb-6">{error}</p>
@@ -205,16 +205,17 @@ export default function Home() {
     }
 
     return (
-        <main className="flex min-h-screen flex-col items-center p-2 bg-background text-foreground">
-            <header className="mb-4 text-center">
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center justify-center">
-                    <BookOpenText className="h-8 w-8 md:h-10 md:w-10 mr-2 text-primary" />
-                    Quiz Whiz
-                </h1>
-                <p className="text-md md:text-lg text-muted-foreground mt-1">Sharpen Your Mind, One Question at a Time!</p>
+        <main className="flex min-h-screen flex-col items-center px-4 py-6 text-foreground sm:px-6 sm:py-8">
+            <header className="mb-6 w-full max-w-4xl text-center sm:mb-8">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                    <BookOpenText className="h-4 w-4" />
+                    Practice hub
+                </div>
+                <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Quiz Whiz</h1>
+                <p className="mt-2 text-sm text-muted-foreground sm:text-base">Sharpen your mind, one question at a time.</p>
             </header>
 
-            <div className="w-full px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-4xl space-y-4">
                 {availableFiles.length > 0 && quizState === "setup" ? (
                     <>
                         <Card className="mb-4 shadow-md w-full mx-auto">

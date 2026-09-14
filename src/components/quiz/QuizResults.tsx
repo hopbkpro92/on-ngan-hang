@@ -28,24 +28,24 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
   const Icon = quizMode === "learning" ? GraduationCap : Award;
 
   return (
-    <Card className="w-full shadow-xl animate-fadeIn mx-auto"> {/* Removed max-width */}
-      <CardHeader className="text-center p-3 md:p-4">
-        <CardTitle className="text-2xl md:text-3xl font-bold">{titleText}</CardTitle>
-        <Icon className="mx-auto h-12 w-12 md:h-16 md:w-16 text-primary my-3 md:my-4" />
-        <CardDescription className="text-lg md:text-xl">
+    <Card className="mx-auto w-full animate-fadeIn shadow-xl">
+      <CardHeader className="p-4 text-center sm:p-6">
+        <CardTitle className="text-2xl font-bold sm:text-3xl">{titleText}</CardTitle>
+        <Icon className="mx-auto my-4 h-14 w-14 text-primary sm:h-16 sm:w-16" />
+        <CardDescription className="text-base sm:text-xl">
           You scored {correctCount} out of {questions.length} ({scorePercentage}%)
         </CardDescription>
-        <div className="flex justify-center gap-3 md:gap-4 mt-1 md:mt-2">
-          <span className="text-md md:text-lg text-correct-answer font-semibold flex items-center">
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-2">
+          <span className="flex items-center text-base font-semibold text-correct-answer sm:text-lg">
             <CheckCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> Correct: {correctCount}
           </span>
-          <span className="text-md md:text-lg text-incorrect-answer font-semibold flex items-center">
+          <span className="flex items-center text-base font-semibold text-incorrect-answer sm:text-lg">
             <XCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> Wrong: {wrongCount}
           </span>
         </div>
       </CardHeader>
-      <CardContent className="p-3 md:p-4">
-        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-center text-card-foreground">
+      <CardContent className="p-4 sm:p-6">
+        <h3 className="mb-4 text-center text-lg font-semibold text-card-foreground sm:text-xl">
           {quizMode === 'learning' ? 'Review Questions & Answers:' : 'Review Your Answers:'}
         </h3>
         <Accordion type="single" collapsible className="w-full">
@@ -53,8 +53,8 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
             const userAnswer = userAnswers[index];
             const isCorrect = userAnswer === question.correctAnswerIndex;
             return (
-              <AccordionItem value={`item-${index}`} key={question.id} className="mb-1.5 md:mb-2 border border-border rounded-md bg-card">
-                <AccordionTrigger className={`p-2.5 md:p-3 text-left hover:no-underline rounded-t-md text-sm md:text-base ${
+              <AccordionItem value={`item-${index}`} key={question.id} className="mb-2 rounded-md border border-border bg-card">
+                <AccordionTrigger className={`rounded-t-md p-3 text-left text-sm hover:no-underline sm:text-base ${
                     isCorrect ? 'text-correct-answer' : 'text-incorrect-answer'
                   }`}>
                   <div className="flex items-center w-full">
@@ -66,12 +66,12 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
                     <span className="flex-grow text-card-foreground">{index + 1}. {question.question}</span>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="p-2.5 md:p-3 text-card-foreground bg-card rounded-b-md">
-                  <ul className="space-y-1.5 md:space-y-2">
+                <AccordionContent className="rounded-b-md bg-card p-3 text-card-foreground sm:p-4">
+                  <ul className="space-y-2">
                     {question.options.map((option, optionIndex) => (
                       <li
                         key={optionIndex}
-                        className={`p-2 md:p-2.5 rounded-md text-xs md:text-sm
+                        className={`rounded-md p-2.5 text-sm leading-5
                           ${optionIndex === question.correctAnswerIndex ? 'quiz-correct-answer font-semibold' : ''}
                           ${optionIndex === userAnswer && !isCorrect ? 'bg-destructive/30 quiz-incorrect-answer-highlight' : ''}
                           ${optionIndex !== question.correctAnswerIndex && optionIndex !== userAnswer ? 'border border-muted' : ''}
@@ -97,8 +97,8 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
           })}
         </Accordion>
       </CardContent>
-      <CardFooter className="p-3 md:p-4 justify-center">
-        <Button onClick={onRetakeQuiz} className="text-md md:text-lg py-2.5 md:py-3"> {/* Adjusted padding and text size */}
+      <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
+        <Button onClick={onRetakeQuiz} className="h-11 w-full text-base sm:w-auto sm:px-8">
           <RefreshCw className="mr-2 h-4 w-4 md:h-5 md:w-5" />
           {quizMode === "learning" ? "New Learning Session" : "Retake Quiz"}
         </Button>

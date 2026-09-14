@@ -107,9 +107,9 @@ export default function QuizSetup({
                     {descriptionText}
                 </CardDescription>
             </CardHeader> */}
-            <CardContent className="space-y-4 p-3 md:p-4">
-                <div className="space-y-1">
-                    <Label htmlFor="numQuestions" className="text-md md:text-lg font-medium">Number of Questions:</Label>
+            <CardContent className="space-y-6 p-4 sm:p-6">
+                <div className="space-y-2">
+                    <Label htmlFor="numQuestions" className="text-base font-semibold sm:text-lg">Number of questions</Label>
                     <Input
                         id="numQuestions"
                         type="number"
@@ -117,11 +117,11 @@ export default function QuizSetup({
                         onChange={(e) => setNumQuestions(e.target.value)}
                         min="1"
                         max={selectedMode === "exam" ? undefined : (maxQuestions > 0 ? maxQuestions : undefined)}
-                        className="text-sm md:text-base bg-card border-primary/50 focus:border-primary focus:ring-primary"
+                        className="h-11 bg-card text-base focus:border-primary focus:ring-primary"
                         data-ai-hint="number input"
                         disabled={isSetupDisabled || isExamMode}
                     />
-                    <p className="text-xs md:text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                         {selectedMode === "exam"
                             ? "(Recommended: 100 questions from all files)"
                             : hasFilesAvailable && hasLoadedQuestions && maxQuestions > 0
@@ -134,27 +134,27 @@ export default function QuizSetup({
                     </p>
                 </div>
                 {/* TODO: If you have a quiz file selector, add disabled={isExamMode} to its props here. */}
-                <div className="space-y-2">
-                    <Label className="text-md md:text-lg font-medium">Select Mode:</Label>
+                <div className="space-y-3">
+                    <Label className="text-base font-semibold sm:text-lg">Select mode</Label>
                     <RadioGroup
                         value={selectedMode}
                         onValueChange={(value: string) => setSelectedMode(value as QuizMode)}
-                        className="flex flex-col sm:flex-row sm:space-x-4 space-y-1 sm:space-y-0 items-start sm:items-center"
+                        className="grid gap-2 sm:grid-cols-3"
                         disabled={isSetupDisabled}
                     >
-                        <div className="flex items-center space-x-1.5 p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="testing" id="mode-testing" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
                                 <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> Testing Mode
                             </Label>
                         </div>
-                        <div className="flex items-center space-x-1.5 p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="learning" id="mode-learning" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
                                 <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> Learning Mode
                             </Label>
                         </div>
-                        <div className="flex items-center space-x-1.5 p-1.5 rounded-md hover:bg-accent/50 transition-colors cursor-pointer has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="exam" id="mode-exam" disabled={!hasFilesAvailable} />
                             <Label htmlFor="mode-exam" className={`flex items-center cursor-pointer text-sm md:text-base ${!hasFilesAvailable ? 'cursor-not-allowed' : ''}`}>
                                 <Rocket className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-green-500" /> Exam Mode
@@ -163,10 +163,10 @@ export default function QuizSetup({
                     </RadioGroup>
                 </div>
             </CardContent>
-            <CardFooter className="p-3 md:p-4 justify-center">
+            <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
                 <Button
                     onClick={handleStart}
-                    className="text-md md:text-lg py-2.5 md:py-3"
+                    className="h-11 w-full text-base sm:w-auto sm:px-8"
                     disabled={isButtonDisabled}
                 >
                     {isLoading ? (
