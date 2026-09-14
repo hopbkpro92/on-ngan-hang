@@ -234,9 +234,6 @@ export default function Home() {
                                         <SelectItem value="Kế toán" className="text-sm md:text-base">
                                             Kế toán
                                         </SelectItem>
-                                        <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
-                                            Kiểm ngân
-                                        </SelectItem>
                                         {/* <SelectItem value="Tín dụng" className="text-sm md:text-base">
                                             Tín dụng
                                         </SelectItem> */}
@@ -292,9 +289,6 @@ export default function Home() {
                                     <SelectContent>
                                         <SelectItem value="Kế toán" className="text-sm md:text-base">
                                             Kế toán
-                                        </SelectItem>
-                                        <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
-                                            Kiểm ngân
                                         </SelectItem>
                                         {/* <SelectItem value="Tín dụng" className="text-sm md:text-base">
                                             Tín dụng
