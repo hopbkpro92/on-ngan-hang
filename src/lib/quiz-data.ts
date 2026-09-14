@@ -3,6 +3,7 @@ export interface Question {
     question: string;
     options: string[];
     correctAnswerIndex: number; // 0-indexed
+    source?: string;
 }
 
 export interface QuizFileMetadata {

@@ -4,7 +4,7 @@ import type { Question } from "@/lib/quiz-data";
 import type { QuizMode } from "@/app/page";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, RefreshCw, Award, GraduationCap, PartyPopper, Heart, Sparkles } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, Award, GraduationCap, PartyPopper, Heart, Sparkles, RotateCcw } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { getTranslations, type Language } from "@/lib/i18n";
 import { getPracticeFeedback } from "@/lib/quiz-feedback";
@@ -15,11 +15,12 @@ interface QuizResultsProps {
   questions: Question[];
   userAnswers: (number | null)[];
   onRetakeQuiz: () => void;
+  onReviewIncorrect: () => void;
   quizMode: QuizMode;
   language: Language;
 }
 
-export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quizMode, language }: QuizResultsProps) {
+export default function QuizResults({ questions, userAnswers, onRetakeQuiz, onReviewIncorrect, quizMode, language }: QuizResultsProps) {
   const t = getTranslations(language);
   let correctCount = 0;
   userAnswers.forEach((answer, index) => {
@@ -32,7 +33,7 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
 
   const titleText = quizMode === "learning" ? t.resultsLearning : t.resultsQuiz;
   const Icon = quizMode === "learning" ? GraduationCap : Award;
-  const practiceFeedback = quizMode === "testing" ? getPracticeFeedback(scorePercentage) : "none";
+  const practiceFeedback = quizMode === "testing" || quizMode === "challenge" ? getPracticeFeedback(scorePercentage) : "none";
 
   useEffect(() => {
     const soundEnabled = window.localStorage.getItem("quiz-sound-enabled") !== "false";
@@ -123,13 +124,24 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
                     ))}
                   </ul>
                   {userAnswer === null && <p className="mt-1.5 text-xs text-muted-foreground md:mt-2 md:text-sm">{t.notAnswered}</p>}
+                  {!isCorrect && question.source && (
+                    <p className="mt-2 rounded-md border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground md:text-sm">
+                      {t.sourceReference}: {question.source}
+                    </p>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             );
           })}
         </Accordion>
       </CardContent>
-      <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
+      <CardFooter className="flex flex-col gap-2 p-4 pt-0 sm:flex-row sm:justify-center sm:p-6 sm:pt-0">
+        {wrongCount > 0 && (
+          <Button onClick={onReviewIncorrect} variant="outline" className="h-11 w-full text-base sm:w-auto">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t.reviewIncorrect}
+          </Button>
+        )}
         <Button onClick={onRetakeQuiz} className="h-11 w-full text-base sm:w-auto sm:px-8">
           <RefreshCw className="mr-2 h-4 w-4 md:h-5 md:w-5" />
           {quizMode === "learning" ? t.newLearning : t.retake}

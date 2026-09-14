@@ -34,6 +34,7 @@ interface QuizAreaProps {
 export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, language }: QuizAreaProps) {
     const t = getTranslations(language);
     const examDurationSeconds = 90 * 60;
+    const challengeDurationSeconds = 60;
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
         () => Array(questions.length).fill(null) // Initialize based on initial questions length
@@ -60,7 +61,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
     useEffect(() => {
         setSelectedAnswers(Array(questions.length).fill(null));
         setCurrentQuestionIndex(0); // Reset to first question
-        setTimeRemaining(examDurationSeconds);
+        setTimeRemaining(quizMode === "challenge" ? challengeDurationSeconds : examDurationSeconds);
         setLearningStreak(0);
         setFeedbackMessage(null);
         autoSubmitRef.current = false;
@@ -119,7 +120,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
 
     // Timer effect for exam mode
     useEffect(() => {
-        if (quizMode !== "exam") {
+        if (quizMode !== "exam" && quizMode !== "challenge") {
             return;
         }
 
@@ -169,9 +170,14 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
             setLearningStreak(nextStreak);
             const feedback = getLearningFeedback(nextStreak, isCorrect);
 
-            if (feedback === "milestone") {
+            if (feedback === "streak3" || feedback === "streak5" || feedback === "streak10") {
                 setFeedbackTone("positive");
-                setFeedbackMessage(t.learningStreak.replace("{count}", String(nextStreak)));
+                const streakMessage = feedback === "streak3"
+                    ? t.streak3
+                    : feedback === "streak5"
+                        ? t.streak5
+                        : t.streak10;
+                setFeedbackMessage(streakMessage.replace("{count}", String(nextStreak)));
                 playCelebrationSound(soundEnabled);
             } else if (feedback === "encouragement") {
                 setFeedbackTone("encouragement");
@@ -229,11 +235,11 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
 
     return (
         <div className="mx-auto w-full space-y-5">
-            {quizMode === "exam" && (
+            {(quizMode === "exam" || quizMode === "challenge") && (
                 <Alert className="border-primary/20 bg-card shadow-sm">
                     <Clock className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-medium sm:text-base">{t.timeRemaining}</span>
+                        <span className="text-sm font-medium sm:text-base">{quizMode === "challenge" ? t.quickChallengeTime : t.timeRemaining}</span>
                         <span className={`text-xl font-bold tabular-nums sm:text-2xl ${getTimerColor()}`}>
                             {formatTime(timeRemaining)}
                         </span>
@@ -260,7 +266,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
                 </Button>
             </div>
             <div className={showNext ? 'animate-fadeIn' : 'opacity-0'}>
-                <QuestionDisplayCard
+                    <QuestionDisplayCard
                     key={`${currentQuestion.id}-${quizMode}-${currentQuestionIndex}`}
                     question={currentQuestion}
                     selectedOption={currentSelectedOption}
@@ -322,7 +328,7 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
                     </div>
                 </div>
                 <div className="flex w-full gap-2 sm:w-auto">
-                    {(quizMode === "testing" || quizMode === "exam") && currentQuestionIndex > 0 && (
+                    {(quizMode === "testing" || quizMode === "exam" || quizMode === "challenge") && currentQuestionIndex > 0 && (
                         <Button
                             onClick={handlePreviousQuestion}
                             size="default"

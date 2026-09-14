@@ -19,7 +19,7 @@ interface QuizSetupProps {
     language: Language;
 }
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Rocket, Loader2, GraduationCap, CheckSquareIcon } from "lucide-react";
+import { Rocket, Loader2, GraduationCap, CheckSquareIcon, Timer } from "lucide-react";
 export default function QuizSetup({
     onStartQuiz,
     maxQuestions,
@@ -38,6 +38,8 @@ export default function QuizSetup({
         if (selectedMode === "exam") {
             // Default to 100 questions for exam mode
             setNumQuestions("100");
+        } else if (selectedMode === "challenge") {
+            setNumQuestions(Math.min(10, maxQuestions).toString());
         } else if (maxQuestions > 0) {
             setNumQuestions(Math.min(10, maxQuestions).toString());
         } else {
@@ -55,7 +57,7 @@ export default function QuizSetup({
             return;
         }
 
-        // For exam mode, we don't need questions loaded from current file
+        // Exam and challenge modes still require an available question source.
         if (selectedMode !== "exam") {
             if (!hasLoadedQuestions || maxQuestions === 0) {
                 toast({
@@ -91,7 +93,7 @@ export default function QuizSetup({
     };
 
     const isSetupDisabled = !hasFilesAvailable || isLoading || (selectedMode !== "exam" && (!hasLoadedQuestions || maxQuestions === 0));
-    const isExamMode = selectedMode === "exam";
+    const isFixedQuestionMode = selectedMode === "exam" || selectedMode === "challenge";
     const isButtonDisabled = isSetupDisabled || parseInt(numQuestions) <= 0 || isNaN(parseInt(numQuestions));
 
     // let descriptionText = "Choose your mode and number of questions to test your knowledge.";
@@ -123,11 +125,13 @@ export default function QuizSetup({
                         max={selectedMode === "exam" ? undefined : (maxQuestions > 0 ? maxQuestions : undefined)}
                         className="h-11 bg-card text-base focus:border-primary focus:ring-primary"
                         data-ai-hint="number input"
-                        disabled={isSetupDisabled || isExamMode}
+                        disabled={isSetupDisabled || isFixedQuestionMode}
                     />
                     <p className="text-sm text-muted-foreground">
                         {selectedMode === "exam"
                             ? `(${t.recommended})`
+                            : selectedMode === "challenge"
+                                ? `(${t.quickChallengeDescription})`
                             : hasFilesAvailable && hasLoadedQuestions && maxQuestions > 0
                                 ? `(Max: ${maxQuestions})`
                                 : hasFilesAvailable && isLoading
@@ -143,13 +147,19 @@ export default function QuizSetup({
                     <RadioGroup
                         value={selectedMode}
                         onValueChange={(value: string) => setSelectedMode(value as QuizMode)}
-                        className="grid gap-2 sm:grid-cols-3"
+                        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
                         disabled={isSetupDisabled}
                     >
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="testing" id="mode-testing" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
                                 <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> {t.testingMode}
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                            <RadioGroupItem value="challenge" id="mode-challenge" disabled={isSetupDisabled} />
+                            <Label htmlFor="mode-challenge" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                                <Timer className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-orange-500" /> {t.quickChallenge}
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">

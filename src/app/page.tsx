@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 type QuizState = "setup" | "active" | "results";
 type Theme = "light" | "dark";
 import { getTranslations, type Language } from "@/lib/i18n";
-export type QuizMode = "learning" | "testing" | "exam";
+export type QuizMode = "learning" | "testing" | "exam" | "challenge";
 
 export default function Home() {
     const [quizState, setQuizState] = useState<QuizState>("setup");
@@ -176,6 +176,21 @@ export default function Home() {
         setUserAnswers([]);
         // quizMode remains as previously selected
     }, []);
+
+    const handleReviewIncorrect = useCallback(() => {
+        const incorrectQuestions = currentQuizQuestions.filter((question, index) => (
+            userAnswers[index] !== question.correctAnswerIndex
+        ));
+
+        if (incorrectQuestions.length === 0) {
+            return;
+        }
+
+        setCurrentQuizQuestions(incorrectQuestions);
+        setUserAnswers(Array(incorrectQuestions.length).fill(null));
+        setQuizMode("learning");
+        setQuizState("active");
+    }, [currentQuizQuestions, userAnswers]);
 
     // Exit handler: when leaving an active quiz (especially exam mode),
     // return to setup and switch to a non-exam mode so the file selector is available again.
@@ -391,6 +406,7 @@ export default function Home() {
                         userAnswers={userAnswers}
                         language={language}
                         onRetakeQuiz={handleRetakeQuiz}
+                        onReviewIncorrect={handleReviewIncorrect}
                         quizMode={quizMode}
                     />
                 )}

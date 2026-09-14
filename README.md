@@ -20,7 +20,8 @@ npm run genkit:dev # Start Genkit dev server (AI flows)
 |------|-------------|
 | **Testing** | Answer questions freely. No feedback until the end. |
 | **Learning** | Immediate feedback after each answer (correct/incorrect + explanation). |
-| **Exam** | 120-minute timed exam. Auto-submits when time expires. |
+| **Exam** | 90-minute timed exam. Auto-submits when time expires. |
+| **Quick challenge** | Answer 10 questions in 60 seconds. Auto-submits when time expires. |
 
 ## Roles
 
@@ -39,6 +40,7 @@ Add Excel `.xlsx` files to the `public/` folder. Each file must have one sheet w
 | E | Option C | `2000` |
 | F | Option D | `2005` |
 | G | Correct answer (1–4) | `2` |
+| H | Reference source (optional) | `Quy định nội bộ, mục 3` |
 
 Register each file in `public/quiz-files.json`:
 

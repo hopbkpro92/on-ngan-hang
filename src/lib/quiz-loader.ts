@@ -170,6 +170,7 @@ function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[]
                 .filter((option) => option.text !== '');
             const options = optionEntries.map((option) => option.text);
             const correctAnswerNum = Number(row[6]);
+            const source = String(row[7] || '').trim();
 
             if (isNaN(id) || id <= 0) {
                 console.warn(`Skipping row ${i + 1} in ${fileName} due to invalid ID (value: ${row[0]}):`, row);
@@ -219,6 +220,7 @@ function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[]
                 question: questionText,
                 options,
                 correctAnswerIndex: correctOptionPosition,
+                source: source || undefined,
             });
             stats.validQuestions++;
         }

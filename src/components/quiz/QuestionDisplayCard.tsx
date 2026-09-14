@@ -101,6 +101,11 @@ export default function QuestionDisplayCard({
             {t.correctAnswer}: {question.options[question.correctAnswerIndex]}
           </p>
         )}
+          {quizMode === 'learning' && hasBeenAnswered && selectedOption !== question.correctAnswerIndex && question.source && (
+            <p className="mt-2 rounded-md border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground md:text-sm">
+              {t.sourceReference}: {question.source}
+            </p>
+          )}
       </CardContent>
     </Card>
   );

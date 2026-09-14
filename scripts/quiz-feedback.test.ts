@@ -6,8 +6,9 @@ import {
 
 describe("quiz feedback rules", () => {
     it("celebrates learning streak milestones", () => {
-        expect(getLearningFeedback(5, true)).toBe("milestone");
-        expect(getLearningFeedback(10, true)).toBe("milestone");
+        expect(getLearningFeedback(3, true)).toBe("streak3");
+        expect(getLearningFeedback(5, true)).toBe("streak5");
+        expect(getLearningFeedback(10, true)).toBe("streak10");
         expect(getLearningFeedback(6, true)).toBe("none");
     });
 
