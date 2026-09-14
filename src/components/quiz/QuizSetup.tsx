@@ -113,7 +113,7 @@ export default function QuizSetup({
                     {descriptionText}
                 </CardDescription>
             </CardHeader> */}
-            <CardContent className="space-y-6 p-4 sm:p-6">
+            <CardContent className="space-y-6 p-4 pb-24 sm:p-6 sm:pb-6">
                 <div className="space-y-2">
                     <Label htmlFor="numQuestions" className="text-base font-semibold sm:text-lg">{t.numberOfQuestions}</Label>
                     <Input
@@ -177,7 +177,7 @@ export default function QuizSetup({
                     </RadioGroup>
                 </div>
             </CardContent>
-            <CardFooter className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <CardFooter className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-6 sm:pt-0 sm:shadow-none sm:backdrop-blur-none">
                 <Button
                     onClick={handleStart}
                     className="h-11 w-full text-base sm:w-auto sm:px-8"
