@@ -151,6 +151,12 @@ export default function QuizSetup({
                         disabled={isSetupDisabled}
                     >
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                            <RadioGroupItem value="learning" id="mode-learning" disabled={isSetupDisabled} />
+                            <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                                <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> {t.learningMode}
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
                             <RadioGroupItem value="testing" id="mode-testing" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
                                 <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> {t.testingMode}
@@ -160,12 +166,6 @@ export default function QuizSetup({
                             <RadioGroupItem value="challenge" id="mode-challenge" disabled={isSetupDisabled} />
                             <Label htmlFor="mode-challenge" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
                                 <Timer className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-orange-500" /> {t.quickChallenge}
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
-                            <RadioGroupItem value="learning" id="mode-learning" disabled={isSetupDisabled} />
-                            <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
-                                <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> {t.learningMode}
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
