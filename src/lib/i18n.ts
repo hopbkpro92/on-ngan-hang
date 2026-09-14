@@ -72,6 +72,8 @@ export const translations = {
         practiceEncouragement: "Đừng nản! Hãy đọc kỹ câu hỏi và tiếp tục luyện tập nhé.",
         soundOn: "Bật âm thanh",
         soundOff: "Tắt âm thanh",
+        lightMode: "Chế độ sáng",
+        darkMode: "Chế độ tối",
         footer: "Dữ liệu từ tệp Excel.",
     },
     en: {
@@ -145,6 +147,8 @@ export const translations = {
         practiceEncouragement: "Keep going! Read each question carefully and continue practicing.",
         soundOn: "Sound on",
         soundOff: "Sound off",
+        lightMode: "Light mode",
+        darkMode: "Dark mode",
         footer: "Data from Excel files.",
     },
 } as const;

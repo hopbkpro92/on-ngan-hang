@@ -7,13 +7,14 @@ import { loadQuizData, listAvailableQuizFiles, loadExamQuestions } from "@/lib/q
 import QuizSetup from "@/components/quiz/QuizSetup";
 import QuizArea from "@/components/quiz/QuizArea";
 import QuizResults from "@/components/quiz/QuizResults";
-import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users } from "lucide-react";
+import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users, Sun, Moon } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type QuizState = "setup" | "active" | "results";
+type Theme = "light" | "dark";
 import { getTranslations, type Language } from "@/lib/i18n";
 export type QuizMode = "learning" | "testing" | "exam";
 
@@ -31,6 +32,7 @@ export default function Home() {
     const [selectedFile, setSelectedFile] = useState<QuizFileMetadata | undefined>(undefined);
     const [userRole, setUserRole] = useState<UserRole>("Kế toán");
     const [language, setLanguage] = useState<Language>("vi");
+    const [theme, setTheme] = useState<Theme>("light");
     const t = getTranslations(language);
 
     useEffect(() => {
@@ -38,6 +40,10 @@ export default function Home() {
         const savedLanguage = window.localStorage.getItem("quiz-language");
         if (savedLanguage === "vi" || savedLanguage === "en") {
             setLanguage(savedLanguage);
+        }
+        const savedTheme = window.localStorage.getItem("quiz-theme");
+        if (savedTheme === "light" || savedTheme === "dark") {
+            setTheme(savedTheme);
         }
 
         const initializeQuizData = async () => {
@@ -69,6 +75,16 @@ export default function Home() {
     const handleLanguageChange = (nextLanguage: Language) => {
         setLanguage(nextLanguage);
         window.localStorage.setItem("quiz-language", nextLanguage);
+    };
+
+    useEffect(() => {
+        document.documentElement.classList.toggle("dark", theme === "dark");
+        document.documentElement.style.colorScheme = theme;
+        window.localStorage.setItem("quiz-theme", theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme((currentTheme) => currentTheme === "light" ? "dark" : "light");
     };
 
     useEffect(() => {
@@ -228,6 +244,18 @@ export default function Home() {
                         <button type="button" onClick={() => handleLanguageChange("vi")} className={`rounded px-2.5 py-1 ${language === "vi" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>VI</button>
                         <button type="button" onClick={() => handleLanguageChange("en")} className={`rounded px-2.5 py-1 ${language === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>EN</button>
                     </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleTheme}
+                        aria-label={theme === "light" ? t.darkMode : t.lightMode}
+                        title={theme === "light" ? t.darkMode : t.lightMode}
+                        className="gap-2 bg-card/80"
+                    >
+                        {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{theme === "light" ? t.darkMode : t.lightMode}</span>
+                    </Button>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground sm:text-base">{t.tagline}</p>
             </header>
