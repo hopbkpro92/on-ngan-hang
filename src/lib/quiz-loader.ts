@@ -153,7 +153,7 @@ function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[]
                 continue;
             }
 
-            // Expect at least 7 columns: ID, Question, 4 Options, CorrectAnswerIndex
+            // Expect at least 7 columns: ID, Question, up to 4 Options, CorrectAnswerIndex
             if (row.length < 7) {
                 console.warn(`Skipping malformed row ${i + 1} in ${fileName} (not enough columns, expected 7, got ${row.length}):`, row);
                 stats.malformedRows++;
@@ -162,12 +162,13 @@ function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[]
 
             const id = Number(row[0]);
             const questionText = String(row[1] || '').trim();
-            const options = [
-                String(row[2] || '').trim(),
-                String(row[3] || '').trim(),
-                String(row[4] || '').trim(),
-                String(row[5] || '').trim(),
-            ];
+            const optionEntries = [2, 3, 4, 5]
+                .map((columnIndex) => ({
+                    sourceIndex: columnIndex - 2,
+                    text: String(row[columnIndex] || '').trim(),
+                }))
+                .filter((option) => option.text !== '');
+            const options = optionEntries.map((option) => option.text);
             const correctAnswerNum = Number(row[6]);
 
             if (isNaN(id) || id <= 0) {
@@ -196,9 +197,19 @@ function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[]
                 continue;
             }
 
-            // Check if the option designated as correct is non-empty
-            if (!options[correctAnswerNum - 1]) {
-                console.warn(`Skipping row ${i + 1} in ${fileName} because the correct option (index ${correctAnswerNum}, text: "${options[correctAnswerNum - 1]}") is empty:`, row);
+            const correctOptionPosition = optionEntries.findIndex(
+                (option) => option.sourceIndex === correctAnswerNum - 1,
+            );
+
+            // The correct answer must point to a non-empty source cell.
+            if (correctOptionPosition === -1) {
+                console.warn(`Skipping row ${i + 1} in ${fileName} because the correct option (index ${correctAnswerNum}) is empty:`, row);
+                stats.invalidAnswerRows++;
+                continue;
+            }
+
+            if (options.length < 2) {
+                console.warn(`Skipping row ${i + 1} in ${fileName} because it has fewer than 2 non-empty options:`, row);
                 stats.invalidAnswerRows++;
                 continue;
             }
@@ -207,7 +218,7 @@ function parseWorksheet(worksheet: XLSX.WorkSheet, fileName: string): Question[]
                 id,
                 question: questionText,
                 options,
-                correctAnswerIndex: correctAnswerNum - 1, // Convert 1-based to 0-based
+                correctAnswerIndex: correctOptionPosition,
             });
             stats.validQuestions++;
         }
