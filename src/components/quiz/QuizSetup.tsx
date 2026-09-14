@@ -150,30 +150,30 @@ export default function QuizSetup({
                         className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
                         disabled={isSetupDisabled}
                     >
-                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                        <Label htmlFor="mode-learning" className={`flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 ${isSetupDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                             <RadioGroupItem value="learning" id="mode-learning" disabled={isSetupDisabled} />
-                            <Label htmlFor="mode-learning" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                            <span className="flex items-center text-sm md:text-base">
                                 <GraduationCap className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-accent" /> {t.learningMode}
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                            </span>
+                        </Label>
+                        <Label htmlFor="mode-testing" className={`flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 ${isSetupDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                             <RadioGroupItem value="testing" id="mode-testing" disabled={isSetupDisabled} />
-                            <Label htmlFor="mode-testing" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                            <span className="flex items-center text-sm md:text-base">
                                 <CheckSquareIcon className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-primary" /> {t.testingMode}
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                            </span>
+                        </Label>
+                        <Label htmlFor="mode-challenge" className={`flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 ${isSetupDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                             <RadioGroupItem value="challenge" id="mode-challenge" disabled={isSetupDisabled} />
-                            <Label htmlFor="mode-challenge" className={`flex items-center cursor-pointer text-sm md:text-base ${isSetupDisabled ? 'cursor-not-allowed' : ''}`}>
+                            <span className="flex items-center text-sm md:text-base">
                                 <Timer className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-orange-500" /> {t.quickChallenge}
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                            </span>
+                        </Label>
+                        <Label htmlFor="mode-exam" className={`flex items-center space-x-2 rounded-md border border-border p-3 transition-colors hover:bg-accent/10 ${!hasFilesAvailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                             <RadioGroupItem value="exam" id="mode-exam" disabled={!hasFilesAvailable} />
-                            <Label htmlFor="mode-exam" className={`flex items-center cursor-pointer text-sm md:text-base ${!hasFilesAvailable ? 'cursor-not-allowed' : ''}`}>
+                            <span className="flex items-center text-sm md:text-base">
                                 <Rocket className="mr-1.5 h-4 w-4 md:h-5 md:w-5 text-green-500" /> {t.examModeShort}
-                            </Label>
-                        </div>
+                            </span>
+                        </Label>
                     </RadioGroup>
                 </div>
             </CardContent>
