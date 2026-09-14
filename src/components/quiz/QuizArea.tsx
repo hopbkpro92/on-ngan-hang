@@ -6,9 +6,11 @@ import type { QuizMode } from "@/app/page";
 import QuestionDisplayCard from "./QuestionDisplayCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, ChevronLeft, CheckSquare, Clock, LogOut } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckSquare, Clock, LogOut, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getTranslations, type Language } from "@/lib/i18n";
+import { getLearningFeedback } from "@/lib/quiz-feedback";
+import { playCelebrationSound } from "@/lib/quiz-sound";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,13 +32,18 @@ interface QuizAreaProps {
 }
 
 export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, language }: QuizAreaProps) {
-        const t = getTranslations(language);
+    const t = getTranslations(language);
+    const examDurationSeconds = 90 * 60;
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
         () => Array(questions.length).fill(null) // Initialize based on initial questions length
     );
     const [showNext, setShowNext] = useState(false);
-    const [timeRemaining, setTimeRemaining] = useState<number>(120 * 60); // 120 minutes in seconds
+    const [timeRemaining, setTimeRemaining] = useState<number>(examDurationSeconds);
+    const [learningStreak, setLearningStreak] = useState(0);
+    const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    const [feedbackTone, setFeedbackTone] = useState<"positive" | "encouragement">("positive");
+    const [soundEnabled, setSoundEnabled] = useState(true);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const autoSubmitRef = useRef<boolean>(false);
 
@@ -53,15 +60,62 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
     useEffect(() => {
         setSelectedAnswers(Array(questions.length).fill(null));
         setCurrentQuestionIndex(0); // Reset to first question
-        setTimeRemaining(120 * 60); // Reset timer to 120 minutes
+        setTimeRemaining(examDurationSeconds);
+        setLearningStreak(0);
+        setFeedbackMessage(null);
         autoSubmitRef.current = false;
     }, [questions]);
 
     useEffect(() => {
+        const savedSoundPreference = window.localStorage.getItem("quiz-sound-enabled");
+        if (savedSoundPreference !== null) {
+            setSoundEnabled(savedSoundPreference === "true");
+        }
+    }, []);
+
+    useEffect(() => {
         setShowNext(false);
+        setFeedbackMessage(null);
         const timer = setTimeout(() => setShowNext(true), 50);
         return () => clearTimeout(timer);
     }, [currentQuestionIndex]);
+
+    const playFeedbackSound = (isCorrect: boolean) => {
+        if (!soundEnabled || typeof window === "undefined") {
+            return;
+        }
+
+        const AudioContextConstructor = window.AudioContext ||
+            (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextConstructor) {
+            return;
+        }
+
+        const audioContext = new AudioContextConstructor();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "sine";
+        const shouldRevealAnswer = quizMode === "learning";
+        oscillator.frequency.value = shouldRevealAnswer
+            ? (isCorrect ? 660 : 220)
+            : 440;
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.18);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.2);
+        oscillator.addEventListener("ended", () => void audioContext.close());
+    };
+
+    const toggleSound = () => {
+        setSoundEnabled((enabled) => {
+            const nextEnabled = !enabled;
+            window.localStorage.setItem("quiz-sound-enabled", String(nextEnabled));
+            return nextEnabled;
+        });
+    };
 
     // Timer effect for exam mode
     useEffect(() => {
@@ -98,9 +152,36 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
     }, [quizMode, onQuizComplete, selectedAnswers]);
 
     const handleOptionSelect = (optionIndex: number) => {
+        const previousAnswer = selectedAnswers[currentQuestionIndex];
         const newAnswers = [...selectedAnswers];
         newAnswers[currentQuestionIndex] = optionIndex;
         setSelectedAnswers(newAnswers);
+
+        if (previousAnswer !== null) {
+            return;
+        }
+
+        const isCorrect = optionIndex === questions[currentQuestionIndex].correctAnswerIndex;
+        playFeedbackSound(isCorrect);
+
+        if (quizMode === "learning") {
+            const nextStreak = isCorrect ? learningStreak + 1 : 0;
+            setLearningStreak(nextStreak);
+            const feedback = getLearningFeedback(nextStreak, isCorrect);
+
+            if (feedback === "milestone") {
+                setFeedbackTone("positive");
+                setFeedbackMessage(t.learningStreak.replace("{count}", String(nextStreak)));
+                playCelebrationSound(soundEnabled);
+            } else if (feedback === "encouragement") {
+                setFeedbackTone("encouragement");
+                setFeedbackMessage(t.learningEncouragement);
+            } else {
+                setFeedbackMessage(null);
+            }
+            return;
+        }
+
     };
 
     const handleNextQuestion = () => {
@@ -165,6 +246,19 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
                     {currentQuestionIndex + 1}/{questions.length}
                 </span>
             </div>
+            <div className="flex justify-end">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleSound}
+                    aria-label={soundEnabled ? t.soundOn : t.soundOff}
+                    title={soundEnabled ? t.soundOn : t.soundOff}
+                >
+                    {soundEnabled ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
+                    {soundEnabled ? t.soundOn : t.soundOff}
+                </Button>
+            </div>
             <div className={showNext ? 'animate-fadeIn' : 'opacity-0'}>
                 <QuestionDisplayCard
                     key={`${currentQuestion.id}-${quizMode}-${currentQuestionIndex}`}
@@ -177,6 +271,20 @@ export default function QuizArea({ questions, onQuizComplete, quizMode, onExit, 
                     language={language}
                 />
             </div>
+            {feedbackMessage && (
+                <div className={`relative flex items-center gap-3 overflow-hidden rounded-md border px-4 py-3 text-sm font-medium ${feedbackTone === "positive" ? "animate-praise-banner border-correct-answer/50 bg-correct-answer/15 text-green-900 shadow-[0_0_22px_hsl(var(--correct-answer-bg)/0.28)] dark:text-green-100" : "animate-feedback-pop border-accent/50 bg-accent/15 text-foreground"}`}>
+                    {feedbackTone === "positive" && (
+                        <>
+                            <span className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-correct-answer/50 animate-praise-ring" />
+                            <Sparkles className="pointer-events-none absolute right-8 top-1 h-4 w-4 animate-praise-burst text-accent" />
+                            <Sparkles className="pointer-events-none absolute bottom-1 right-20 h-3 w-3 animate-praise-burst text-primary [animation-delay:120ms]" />
+                            <Sparkles className="pointer-events-none absolute left-16 bottom-1 h-3 w-3 animate-praise-burst text-accent [animation-delay:220ms]" />
+                        </>
+                    )}
+                    <Sparkles className={`relative z-10 h-5 w-5 shrink-0 ${feedbackTone === "positive" ? "animate-praise-wiggle" : "animate-pulse"}`} />
+                    {feedbackMessage}
+                </div>
+            )}
 
             <div className="flex flex-col gap-4 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center justify-between gap-3 sm:justify-start">

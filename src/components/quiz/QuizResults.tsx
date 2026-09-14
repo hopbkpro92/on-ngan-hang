@@ -4,9 +4,12 @@ import type { Question } from "@/lib/quiz-data";
 import type { QuizMode } from "@/app/page";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, RefreshCw, Award, GraduationCap } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, Award, GraduationCap, PartyPopper, Heart, Sparkles } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { getTranslations, type Language } from "@/lib/i18n";
+import { getPracticeFeedback } from "@/lib/quiz-feedback";
+import { playCelebrationSound } from "@/lib/quiz-sound";
+import { useEffect } from "react";
 
 interface QuizResultsProps {
   questions: Question[];
@@ -29,6 +32,14 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
 
   const titleText = quizMode === "learning" ? t.resultsLearning : t.resultsQuiz;
   const Icon = quizMode === "learning" ? GraduationCap : Award;
+  const practiceFeedback = quizMode === "testing" ? getPracticeFeedback(scorePercentage) : "none";
+
+  useEffect(() => {
+    const soundEnabled = window.localStorage.getItem("quiz-sound-enabled") !== "false";
+    if (practiceFeedback === "praise") {
+      playCelebrationSound(soundEnabled);
+    }
+  }, [practiceFeedback]);
 
   return (
     <Card className="mx-auto w-full animate-fadeIn shadow-xl">
@@ -46,6 +57,24 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, quiz
             <XCircle className="mr-1 h-4 w-4 md:h-5 md:w-5" /> {t.wrong}: {wrongCount}
           </span>
         </div>
+        {practiceFeedback !== "none" && (
+          <div className={`relative mx-auto mt-5 flex max-w-xl items-center justify-center gap-3 overflow-hidden rounded-md border px-4 py-3 text-sm font-medium sm:text-base ${practiceFeedback === "praise" ? "animate-praise-banner border-correct-answer/50 bg-correct-answer/15 text-green-900 shadow-[0_0_22px_hsl(var(--correct-answer-bg)/0.28)] dark:text-green-100" : "animate-feedback-pop border-accent/50 bg-accent/15 text-foreground"}`}>
+            {practiceFeedback === "praise" ? (
+              <>
+                <span className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-correct-answer/50 animate-praise-ring" />
+                <Sparkles className="pointer-events-none absolute left-8 top-1 h-4 w-4 animate-praise-burst text-accent" />
+                <Sparkles className="pointer-events-none absolute right-8 bottom-1 h-4 w-4 animate-praise-burst text-primary [animation-delay:120ms]" />
+                <Sparkles className="pointer-events-none absolute left-20 bottom-1 h-3 w-3 animate-praise-burst text-accent [animation-delay:220ms]" />
+                <PartyPopper className="relative z-10 h-6 w-6 shrink-0 animate-praise-wiggle" />
+              </>
+            ) : (
+              <Heart className="h-6 w-6 shrink-0 animate-pulse" />
+            )}
+            {practiceFeedback === "praise"
+              ? t.practicePraise.replace("{percent}", String(scorePercentage))
+              : t.practiceEncouragement}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-4 sm:p-6">
         <h3 className="mb-4 text-center text-lg font-semibold text-card-foreground sm:text-xl">
