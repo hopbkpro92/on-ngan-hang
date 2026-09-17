@@ -62,6 +62,15 @@ export default function QuizSetup({
     const { toast } = useToast();
     const t = getTranslations(language);
 
+    const handleModeChange = (value: string) => {
+        const scrollPosition = window.scrollY;
+        setSelectedMode(value as QuizMode);
+
+        requestAnimationFrame(() => {
+            window.scrollTo({ top: scrollPosition, behavior: "auto" });
+        });
+    };
+
     const updateQuestionRange = (nextFromId: string, nextToId: string) => {
         setFromId(nextFromId);
         setToId(nextToId);
@@ -189,7 +198,7 @@ export default function QuizSetup({
                     {descriptionText}
                 </CardDescription>
             </CardHeader> */}
-            <CardContent className="space-y-6 p-4 pb-24 sm:p-6 sm:pb-6">
+            <CardContent className="space-y-6 p-4 sm:p-6">
                 {isRangeMode && questionIdRange && (
                     <>
                         <div className="space-y-2">
@@ -276,7 +285,7 @@ export default function QuizSetup({
                     <Label className="text-base font-semibold sm:text-lg">{t.selectMode}</Label>
                     <RadioGroup
                         value={selectedMode}
-                        onValueChange={(value: string) => setSelectedMode(value as QuizMode)}
+                        onValueChange={handleModeChange}
                         className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
                         disabled={isSetupDisabled}
                     >
@@ -307,7 +316,7 @@ export default function QuizSetup({
                     </RadioGroup>
                 </div>
             </CardContent>
-            <CardFooter className="fixed inset-x-0 bottom-0 z-40 flex flex-col items-center justify-center gap-2 border-t border-border/80 bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] backdrop-blur sm:static sm:flex-row sm:border-0 sm:bg-transparent sm:p-6 sm:pt-0 sm:shadow-none sm:backdrop-blur-none">
+            <CardFooter className="fixed inset-x-0 bottom-0 z-40 flex flex-col items-center justify-center gap-2 border-t border-border/80 bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] backdrop-blur sm:left-1/2 sm:right-auto sm:w-[calc(100%-2rem)] sm:max-w-4xl sm:-translate-x-1/2 sm:rounded-md sm:border sm:border-border/80 sm:bg-card/95 sm:p-3 sm:shadow-lg sm:backdrop-blur">
                 {isRangeMode && storedWrongCount > 0 && (
                     <Button
                         type="button"
@@ -321,7 +330,7 @@ export default function QuizSetup({
                 )}
                 <Button
                     onClick={handleStart}
-                    className="h-11 w-full text-base sm:w-auto sm:px-8"
+                    className="h-11 w-full text-base sm:px-8"
                     disabled={isButtonDisabled}
                 >
                     {isLoading ? (

@@ -46,7 +46,7 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [currentYear, setCurrentYear] = useState<number | null>(null);
-    const [quizMode, setQuizMode] = useState<QuizMode>("testing");
+    const [quizMode, setQuizMode] = useState<QuizMode>("learning");
 
     const [availableFiles, setAvailableFiles] = useState<QuizFileMetadata[]>([]);
     const [selectedFile, setSelectedFile] = useState<QuizFileMetadata | undefined>(undefined);
@@ -303,7 +303,7 @@ export default function Home() {
         setQuizState("setup");
         setCurrentQuizQuestions([]);
         setUserAnswers([]);
-        setQuizMode("testing");
+        setQuizMode("learning");
     }, []);
 
     const handleFileChange = (value: string) => {
@@ -576,8 +576,6 @@ export default function Home() {
                 )}
             </div>
             <footer className="mt-10 w-full max-w-4xl border-t border-border/70 pt-5 text-center text-xs leading-5 text-muted-foreground">
-                <p>{t.footer}</p>
-                {currentYear !== null && <p>&copy; {currentYear} Quiz Whiz.</p>}
             </footer>
         </main>
     );
