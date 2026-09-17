@@ -23,6 +23,19 @@ npm run genkit:dev # Start Genkit dev server (AI flows)
 | **Exam** | 90-minute timed exam. Auto-submits when time expires. |
 | **Quick challenge** | Answer 10 questions in 60 seconds. Auto-submits when time expires. |
 
+### Learning and testing selection
+
+Learning and Testing use the Question ID from column A of the selected Excel
+file. You can enter an inclusive ID range, choose sequential or random order,
+and select how many existing questions in that range to answer. Missing IDs
+are skipped. Retaking creates a new selection with the same settings, while
+the exact-retry action keeps the same question set.
+
+Incorrect answers are saved in the browser per file and Question ID. The
+results screen can review incorrect answers from the current session or saved
+incorrect answers from earlier sessions. A correct answer removes that
+question from the saved incorrect list.
+
 ## Roles
 
 Four role-based question banks: **Kế toán**, **Kiểm ngân**, **Tín dụng**, **Quản lý**. Questions tagged `"Kiến thức chung"` (common knowledge) appear for all roles.

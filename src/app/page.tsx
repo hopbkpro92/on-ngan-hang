@@ -8,7 +8,7 @@ import QuizSetup from "@/components/quiz/QuizSetup";
 import QuizArea from "@/components/quiz/QuizArea";
 import QuizResults from "@/components/quiz/QuizResults";
 import ProgressPanel from "@/components/quiz/ProgressPanel";
-import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users, Sun, Moon, BarChart3 } from "lucide-react";
+import { Loader2, AlertTriangle, BookOpenText, FileText, Rocket, Users, Sun, Moon, BarChart3, ChevronDown } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,17 @@ import {
     saveQuizProgress,
     type QuizProgress,
 } from "@/lib/quiz-progress";
+import {
+    filterQuestionsByIdRange,
+    getQuestionIdRange,
+    selectQuestions,
+    type SelectionOrder,
+} from "@/lib/quiz-selection";
+import {
+    getStoredWrongQuestions,
+    loadWrongAnswerIds,
+    recordWrongAnswers,
+} from "@/lib/quiz-wrong-answers";
 
 type QuizState = "setup" | "active" | "results";
 type Theme = "light" | "dark";
@@ -43,6 +54,10 @@ export default function Home() {
     const [language, setLanguage] = useState<Language>("vi");
     const [theme, setTheme] = useState<Theme>("light");
     const [progress, setProgress] = useState<QuizProgress>(createInitialProgress);
+    const [selectionFromId, setSelectionFromId] = useState(0);
+    const [selectionToId, setSelectionToId] = useState(0);
+    const [selectionOrder, setSelectionOrder] = useState<SelectionOrder>("random");
+    const [storedWrongCount, setStoredWrongCount] = useState(0);
     const t = getTranslations(language);
 
     useEffect(() => {
@@ -114,6 +129,11 @@ export default function Home() {
                 const data = await loadQuizData(selectedFile.path);
                 if (data && data.length > 0) {
                     setAllLoadedQuestions(data);
+                    const range = getQuestionIdRange(data);
+                    if (range) {
+                        setSelectionFromId(range.minId);
+                        setSelectionToId(range.maxId);
+                    }
                 } else {
                     setAllLoadedQuestions([]);
                     setError(`No valid questions found in '${selectedFile.path}'. Please ensure it's correctly formatted and contains data.`);
@@ -133,7 +153,13 @@ export default function Home() {
         fetchQuestions();
     }, [selectedFile, availableFiles.length]);
 
-    const handleStartQuiz = useCallback((numQuestions: number, mode: QuizMode) => {
+    const handleStartQuiz = useCallback((
+        numQuestions: number,
+        mode: QuizMode,
+        fromId: number,
+        toId: number,
+        order: SelectionOrder,
+    ) => {
         if (mode === "exam") {
             // For exam mode, we'll load questions from files based on user role
             setQuizMode(mode);
@@ -166,13 +192,20 @@ export default function Home() {
             return;
         }
         setQuizMode(mode);
-        const getRandomQuestions = (questions: Question[], count: number): Question[] => {
-            const shuffled = [...questions].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, Math.min(count, questions.length));
-        };
-        const randomQuestions = getRandomQuestions(allLoadedQuestions, numQuestions);
-        setCurrentQuizQuestions(randomQuestions);
-        setUserAnswers(Array(randomQuestions.length).fill(null));
+        const questionsInRange = mode === "challenge"
+            ? allLoadedQuestions
+            : filterQuestionsByIdRange(allLoadedQuestions, fromId, toId);
+        if (questionsInRange.length === 0) {
+            setError("No questions found in the selected ID range.");
+            return;
+        }
+
+        const selectedQuestions = selectQuestions(questionsInRange, numQuestions, order);
+        setSelectionFromId(fromId);
+        setSelectionToId(toId);
+        setSelectionOrder(order);
+        setCurrentQuizQuestions(selectedQuestions);
+        setUserAnswers(Array(selectedQuestions.length).fill(null));
         setQuizState("active");
     }, [allLoadedQuestions, userRole]);
 
@@ -190,9 +223,24 @@ export default function Home() {
         );
         setProgress(nextProgress);
         saveQuizProgress(nextProgress);
+        if (
+            selectedFile &&
+            (quizMode === "learning" || quizMode === "testing")
+        ) {
+            recordWrongAnswers(
+                window.localStorage,
+                selectedFile.path,
+                currentQuizQuestions,
+                answers,
+            );
+            const wrongIds = loadWrongAnswerIds(window.localStorage, selectedFile.path);
+            setStoredWrongCount(
+                currentQuizQuestions.filter((question) => wrongIds.includes(question.id)).length,
+            );
+        }
         setUserAnswers(answers);
         setQuizState("results");
-    }, [currentQuizQuestions, progress]);
+    }, [currentQuizQuestions, progress, quizMode, selectedFile]);
 
     const handleRetakeQuiz = useCallback(() => {
         setQuizState("setup");
@@ -200,6 +248,11 @@ export default function Home() {
         setUserAnswers([]);
         // quizMode remains as previously selected
     }, []);
+
+    const handleRetakeSameQuiz = useCallback(() => {
+        setUserAnswers(Array(currentQuizQuestions.length).fill(null));
+        setQuizState("active");
+    }, [currentQuizQuestions.length]);
 
     const handleReviewIncorrect = useCallback(() => {
         const incorrectQuestions = currentQuizQuestions.filter((question, index) => (
@@ -215,6 +268,34 @@ export default function Home() {
         setQuizMode("learning");
         setQuizState("active");
     }, [currentQuizQuestions, userAnswers]);
+
+    const handleReviewStoredIncorrect = useCallback((
+        fromId: number,
+        toId: number,
+    ) => {
+        if (!selectedFile) {
+            return;
+        }
+
+        const wrongIds = loadWrongAnswerIds(window.localStorage, selectedFile.path);
+        const questionsInRange = filterQuestionsByIdRange(
+            allLoadedQuestions,
+            fromId,
+            toId,
+        );
+        const storedQuestions = getStoredWrongQuestions(questionsInRange, wrongIds);
+        if (storedQuestions.length === 0) {
+            setError("No saved incorrect questions found in the selected ID range.");
+            return;
+        }
+
+        setSelectionFromId(fromId);
+        setSelectionToId(toId);
+        setQuizMode("learning");
+        setCurrentQuizQuestions(storedQuestions);
+        setUserAnswers(Array(storedQuestions.length).fill(null));
+        setQuizState("active");
+    }, [allLoadedQuestions, selectedFile]);
 
     // Exit handler: when leaving an active quiz (especially exam mode),
     // return to setup and switch to a non-exam mode so the file selector is available again.
@@ -233,6 +314,7 @@ export default function Home() {
             setCurrentQuizQuestions([]);
             setUserAnswers([]);
             setAllLoadedQuestions([]);
+            setStoredWrongCount(0);
         }
     };
 
@@ -243,7 +325,25 @@ export default function Home() {
         setUserAnswers([]);
         setAllLoadedQuestions([]);
         setSelectedFile(undefined);
+        setStoredWrongCount(0);
     };
+
+    useEffect(() => {
+        if (!selectedFile || allLoadedQuestions.length === 0) {
+            setStoredWrongCount(0);
+            return;
+        }
+
+        const wrongIds = loadWrongAnswerIds(window.localStorage, selectedFile.path);
+        const questionsInRange = filterQuestionsByIdRange(
+            allLoadedQuestions,
+            selectionFromId,
+            selectionToId,
+        );
+        setStoredWrongCount(
+            getStoredWrongQuestions(questionsInRange, wrongIds).length,
+        );
+    }, [allLoadedQuestions, selectedFile, selectionFromId, selectionToId]);
 
     const showGlobalLoader = isLoading && (availableFiles.length === 0 || !selectedFile || (!!selectedFile && allLoadedQuestions.length === 0 && !error));
 
@@ -429,15 +529,28 @@ export default function Home() {
                 )}
 
                 {quizState === "setup" && (
-                    <QuizSetup
+                    <>
+                        <div className="flex items-center justify-center gap-1.5 py-1 text-center text-xs text-muted-foreground sm:hidden">
+                            <span>{t.scrollForMoreSettings}</span>
+                            <ChevronDown className="h-4 w-4 animate-bounce" aria-hidden="true" />
+                        </div>
+                        <QuizSetup
                         onStartQuiz={handleStartQuiz}
+                        onReviewStoredIncorrect={handleReviewStoredIncorrect}
+                        questions={allLoadedQuestions}
+                        questionIdRange={getQuestionIdRange(allLoadedQuestions)}
+                        initialFromId={selectionFromId || getQuestionIdRange(allLoadedQuestions)?.minId || 0}
+                        initialToId={selectionToId || getQuestionIdRange(allLoadedQuestions)?.maxId || 0}
+                        initialSelectionOrder={selectionOrder}
+                        storedWrongCount={storedWrongCount}
                         maxQuestions={allLoadedQuestions.length}
                         isLoading={isLoading && !!selectedFile && allLoadedQuestions.length === 0 && !error}
                         hasLoadedQuestions={allLoadedQuestions.length > 0}
                         language={language}
                         hasFilesAvailable={availableFiles.length > 0}
                         initialMode={quizMode}
-                    />
+                        />
+                    </>
                 )}
                 {quizState === "active" && currentQuizQuestions.length > 0 && (
                     <QuizArea
@@ -454,7 +567,10 @@ export default function Home() {
                         userAnswers={userAnswers}
                         language={language}
                         onRetakeQuiz={handleRetakeQuiz}
+                        onRetakeSameQuiz={handleRetakeSameQuiz}
                         onReviewIncorrect={handleReviewIncorrect}
+                        onReviewStoredIncorrect={() => handleReviewStoredIncorrect(selectionFromId, selectionToId)}
+                        storedWrongCount={storedWrongCount}
                         quizMode={quizMode}
                     />
                 )}

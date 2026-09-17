@@ -15,12 +15,15 @@ interface QuizResultsProps {
   questions: Question[];
   userAnswers: (number | null)[];
   onRetakeQuiz: () => void;
+  onRetakeSameQuiz: () => void;
   onReviewIncorrect: () => void;
+  onReviewStoredIncorrect: () => void;
+  storedWrongCount: number;
   quizMode: QuizMode;
   language: Language;
 }
 
-export default function QuizResults({ questions, userAnswers, onRetakeQuiz, onReviewIncorrect, quizMode, language }: QuizResultsProps) {
+export default function QuizResults({ questions, userAnswers, onRetakeQuiz, onRetakeSameQuiz, onReviewIncorrect, onReviewStoredIncorrect, storedWrongCount, quizMode, language }: QuizResultsProps) {
   const t = getTranslations(language);
   let correctCount = 0;
   userAnswers.forEach((answer, index) => {
@@ -142,6 +145,16 @@ export default function QuizResults({ questions, userAnswers, onRetakeQuiz, onRe
             {t.reviewIncorrect}
           </Button>
         )}
+        {storedWrongCount > 0 && (
+          <Button onClick={onReviewStoredIncorrect} variant="outline" className="h-11 w-full text-base sm:w-auto">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t.reviewSavedIncorrect} ({storedWrongCount})
+          </Button>
+        )}
+        <Button onClick={onRetakeSameQuiz} variant="outline" className="h-11 w-full text-base sm:w-auto">
+          <RotateCcw className="mr-2 h-4 w-4" />
+          {t.retakeSameQuestions}
+        </Button>
         <Button onClick={onRetakeQuiz} className="h-11 w-full text-base sm:w-auto sm:px-8">
           <RefreshCw className="mr-2 h-4 w-4 md:h-5 md:w-5" />
           {quizMode === "learning" ? t.newLearning : t.retake}
