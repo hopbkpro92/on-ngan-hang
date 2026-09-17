@@ -330,6 +330,7 @@ export default function Home() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Kế toán">{t.accountant}</SelectItem>
+                                        <SelectItem value="Kiểm ngân">{t.auditor}</SelectItem>
                                         <SelectItem value="Quản lý">{t.manager}</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -379,6 +380,9 @@ export default function Home() {
                                         <SelectItem value="Kế toán" className="text-sm md:text-base">
                                             {t.accountant}
                                         </SelectItem>
+                                        <SelectItem value="Kiểm ngân" className="text-sm md:text-base">
+                                            {t.auditor}
+                                        </SelectItem>
                                         {/* <SelectItem value="Tín dụng" className="text-sm md:text-base">
                                             Tín dụng
                                         </SelectItem> */}
@@ -398,7 +402,13 @@ export default function Home() {
                             </CardHeader>
                             <CardContent className="p-3 md:p-4 pt-0">
                                 <p className="text-sm leading-6 text-muted-foreground sm:text-base">
-                                    {t.examDescription.replace("{role}", language === "vi" ? userRole : userRole === "Kế toán" ? t.accountant : t.manager)}
+                                    {t.examDescription.replace("{role}", language === "vi"
+                                        ? userRole
+                                        : userRole === "Kế toán"
+                                            ? t.accountant
+                                            : userRole === "Kiểm ngân"
+                                                ? t.auditor
+                                                : t.manager)}
                                 </p>
                             </CardContent>
                         </Card>

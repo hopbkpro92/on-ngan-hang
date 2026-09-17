@@ -18,5 +18,10 @@
         "path": "17. Tiêu chuẩn GDV.xlsx",
         "role": "Kiến thức chung",
         "examQuestions": 3
+    },
+    {
+        "path": "9. Kiểm ngân.xlsx",
+        "role": "Kiểm ngân",
+        "examQuestions": 75
     }
 ]
